@@ -129,7 +129,7 @@ const YoloCoin: React.FC = () => {
   const isSpinning = speed > 0;
 
   return (
-    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center px-6 py-8 relative overflow-hidden select-none">
+    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center px-4 md:px-6 pt-16 md:pt-20 pb-6 relative overflow-hidden select-none">
       {/* 背景 */}
       <div className="absolute inset-0 pointer-events-none">
         <div 

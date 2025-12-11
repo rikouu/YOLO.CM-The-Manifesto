@@ -459,7 +459,7 @@ const DareGenerator: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-6 md:p-12 flex flex-col items-center">
+    <div className="w-full max-w-4xl mx-auto px-4 py-4 md:p-8 flex flex-col items-center">
       
       {/* 图片预览弹窗 */}
       {previewImage && (

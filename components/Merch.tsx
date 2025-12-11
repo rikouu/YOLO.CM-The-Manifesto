@@ -6,7 +6,7 @@ const Merch: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-yolo-black flex flex-col items-center pt-32 pb-20 px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-yolo-black flex flex-col items-center pt-16 md:pt-20 pb-12 px-4 md:px-6 relative overflow-hidden">
       {/* Background Glitch Text */}
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-[30vw] font-black text-yolo-gray/5 leading-none select-none pointer-events-none whitespace-nowrap">
         SOLD OUT

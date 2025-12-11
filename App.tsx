@@ -11,7 +11,7 @@ import Profile from './components/Profile';
 import ChallengeWall from './components/ChallengeWall';
 import AuthModal from './components/AuthModal';
 import { AppMode, Language } from './types';
-import { Terminal, Activity, Zap, Globe, FileText, CircleDollarSign, ShoppingBag, ChevronDown, ArrowRight, User, Trophy } from 'lucide-react';
+import { Terminal, Activity, Zap, Globe, FileText, CircleDollarSign, ShoppingBag, ArrowRight, User, Trophy, Menu, X } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './components/Toast';
@@ -24,7 +24,9 @@ const AppContent: React.FC = () => {
   const { user } = useAuth();
   const [langMenuOpen, setLangMenuOpen] = useState(false);
   const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const langMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -32,10 +34,13 @@ const AppContent: React.FC = () => {
     };
     window.addEventListener('scroll', handleScroll);
     
-    // Close language menu when clicking outside
+    // Close menus when clicking outside
     const handleClickOutside = (event: MouseEvent) => {
       if (langMenuRef.current && !langMenuRef.current.contains(event.target as Node)) {
         setLangMenuOpen(false);
+      }
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target as Node)) {
+        setMobileMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -58,14 +63,14 @@ const AppContent: React.FC = () => {
     <button
       onClick={() => handleModeChange(target)}
       onMouseEnter={() => soundManager.playHover()}
-      className={`flex items-center space-x-2 px-3 py-2 rounded-full border transition-all duration-300 font-mono text-xs md:text-sm whitespace-nowrap
+      className={`p-1.5 md:p-2 rounded-full border transition-all flex-shrink-0
         ${mode === target 
-          ? 'bg-yolo-lime text-yolo-black border-yolo-lime font-bold' 
-          : 'bg-transparent text-yolo-white border-transparent hover:border-yolo-gray'
+          ? 'bg-yolo-lime text-black border-yolo-lime' 
+          : 'text-white border-transparent hover:border-yolo-gray'
         }`}
+      title={label}
     >
       <Icon className="w-4 h-4" />
-      <span className="hidden lg:inline">{label}</span>
     </button>
   );
 
@@ -77,102 +82,165 @@ const AppContent: React.FC = () => {
       {/* Global Mouse Spotlight Effect */}
       <MouseSpotlight />
 
-      {/* Language Switcher - Aligned with Navbar */}
-      <div 
-        ref={langMenuRef}
-        className="fixed z-[60] font-mono text-xs
-           top-4 right-6"
-      >
-        <div className="relative">
-            <button
-                onClick={() => {
-                    soundManager.playClick();
-                    setLangMenuOpen(!langMenuOpen);
-                }}
-                className={`flex items-center gap-2 px-3 py-2 bg-transparent backdrop-blur-sm rounded-none border transition-all duration-300 min-w-[80px] justify-between group
-                ${langMenuOpen 
-                    ? 'border-yolo-lime text-yolo-lime bg-black/80' 
-                    : 'border-yolo-gray text-yolo-gray hover:border-yolo-white hover:text-yolo-white'
-                }`}
-            >
-                <Globe className="w-3 h-3" />
-                <span className="font-bold">{language.toUpperCase()}</span>
-                <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${langMenuOpen ? 'rotate-180' : ''}`} />
-            </button>
 
-            {/* Dropdown Options */}
-            <div className={`absolute top-full right-0 mt-1 w-full bg-black border border-yolo-gray shadow-[0_0_15px_rgba(0,0,0,0.8)] transition-all duration-300 origin-top ${langMenuOpen ? 'opacity-100 scale-100 translate-y-0' : 'opacity-0 scale-95 -translate-y-2 pointer-events-none'}`}>
-                {availableLanguages.filter(l => l !== language).map((lang) => (
-                    <button
-                        key={lang}
-                        onClick={() => {
-                            soundManager.playClick();
-                            setLanguage(lang);
-                            setLangMenuOpen(false);
-                        }}
-                        className="w-full text-left px-4 py-3 text-yolo-white hover:text-black hover:bg-yolo-lime transition-colors block border-b border-yolo-gray/20 last:border-0 font-bold"
-                    >
-                        {lang.toUpperCase()}
-                    </button>
-                ))}
-            </div>
-        </div>
-      </div>
 
       {/* Navigation (Only visible after intro) */}
       {mode !== AppMode.INTRO && (
-        <nav className={`fixed top-0 left-0 right-0 z-50 flex flex-col md:flex-row justify-between items-center px-6 py-4 transition-all duration-300 gap-4 md:gap-0 ${scrolled ? 'bg-yolo-black/90 backdrop-blur-lg border-b border-yolo-gray' : 'bg-transparent'}`}>
-          <div 
-            className="font-black text-xl tracking-tighter cursor-pointer hover:text-yolo-pink transition-colors"
-            onClick={() => handleModeChange(AppMode.HOME)}
-            onMouseEnter={() => soundManager.playHover()}
-          >
-            YOLO.CM
-          </div>
-          {/* Scrollable Nav for Mobile */}
-          <div className="flex space-x-1 md:space-x-2 overflow-x-auto w-full md:w-auto md:pr-40 scrollbar-hide pb-2 md:pb-0 justify-start md:justify-end">
-            <NavButton target={AppMode.HOME} icon={Terminal} label={t.nav.home} />
-            <NavButton target={AppMode.MANIFESTO} icon={FileText} label={t.nav.manifesto} />
-            <NavButton target={AppMode.DARE} icon={Zap} label={t.nav.fate} />
-            <NavButton target={AppMode.COIN} icon={CircleDollarSign} label={t.nav.coin} />
-            <NavButton target={AppMode.STATS} icon={Activity} label={t.nav.data} />
-            <NavButton target={AppMode.WALL} icon={Trophy} label="WALL" />
-            {/* Merch Icon for Nav */}
-            <button
-                onClick={() => handleModeChange(AppMode.MERCH)}
-                onMouseEnter={() => soundManager.playHover()}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-full border transition-all duration-300 font-mono text-xs md:text-sm whitespace-nowrap
-                    ${mode === AppMode.MERCH
-                    ? 'bg-yolo-pink text-yolo-black border-yolo-pink font-bold' 
-                    : 'bg-transparent text-yolo-white border-transparent hover:border-yolo-gray'
-                    }`}
+        <nav className={`fixed top-0 left-0 right-0 z-50 px-3 md:px-6 py-2 transition-all duration-300 ${scrolled ? 'bg-yolo-black/95 backdrop-blur-lg border-b border-yolo-gray' : 'bg-yolo-black/90 backdrop-blur-sm'}`}>
+          <div className="flex items-center justify-between h-10">
+            {/* Logo */}
+            <div 
+              className="font-black text-lg md:text-xl tracking-tighter cursor-pointer hover:text-yolo-pink transition-colors flex-shrink-0"
+              onClick={() => handleModeChange(AppMode.HOME)}
+              onMouseEnter={() => soundManager.playHover()}
             >
-                <ShoppingBag className="w-4 h-4" />
-            </button>
-            {/* 用户按钮 */}
-            {user ? (
+              YOLO
+            </div>
+            
+            {/* Desktop Nav - Hidden on mobile */}
+            <div className="hidden md:flex items-center gap-2">
+              <NavButton target={AppMode.HOME} icon={Terminal} label={t.nav.home} />
+              <NavButton target={AppMode.MANIFESTO} icon={FileText} label={t.nav.manifesto} />
+              <NavButton target={AppMode.DARE} icon={Zap} label={t.nav.fate} />
+              <NavButton target={AppMode.COIN} icon={CircleDollarSign} label={t.nav.coin} />
+              <NavButton target={AppMode.STATS} icon={Activity} label={t.nav.data} />
+              <NavButton target={AppMode.WALL} icon={Trophy} label="WALL" />
               <button
-                onClick={() => handleModeChange(AppMode.PROFILE)}
-                onMouseEnter={() => soundManager.playHover()}
-                className={`flex items-center space-x-2 px-3 py-2 rounded-full border transition-all duration-300 font-mono text-xs md:text-sm whitespace-nowrap
-                  ${mode === AppMode.PROFILE
-                    ? 'bg-yolo-lime text-yolo-black border-yolo-lime font-bold' 
-                    : 'bg-transparent text-yolo-white border-transparent hover:border-yolo-gray'
-                  }`}
+                  onClick={() => handleModeChange(AppMode.MERCH)}
+                  onMouseEnter={() => soundManager.playHover()}
+                  className={`p-2 rounded-full border transition-all
+                      ${mode === AppMode.MERCH
+                      ? 'bg-yolo-pink text-black border-yolo-pink' 
+                      : 'text-white border-transparent hover:border-yolo-gray'
+                      }`}
               >
-                <User className="w-4 h-4" />
-                <span className="hidden lg:inline">{user.nickname || user.username}</span>
+                  <ShoppingBag className="w-4 h-4" />
               </button>
-            ) : (
+              {user ? (
+                <button
+                  onClick={() => handleModeChange(AppMode.PROFILE)}
+                  onMouseEnter={() => soundManager.playHover()}
+                  className={`p-2 rounded-full border transition-all
+                    ${mode === AppMode.PROFILE
+                      ? 'bg-yolo-lime text-black border-yolo-lime' 
+                      : 'text-white border-transparent hover:border-yolo-gray'
+                    }`}
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  onMouseEnter={() => soundManager.playHover()}
+                  className="p-2 rounded-full border border-yolo-pink text-yolo-pink hover:bg-yolo-pink hover:text-black transition-all"
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              )}
+              
+              {/* Language Switcher - Desktop */}
+              <div ref={langMenuRef} className="relative ml-1">
+                <button
+                  onClick={() => { soundManager.playClick(); setLangMenuOpen(!langMenuOpen); }}
+                  className={`p-2 rounded-full border transition-all
+                    ${langMenuOpen ? 'border-yolo-lime text-yolo-lime' : 'text-white/60 border-transparent hover:text-white hover:border-yolo-gray'}`}
+                  title={language.toUpperCase()}
+                >
+                  <Globe className="w-4 h-4" />
+                </button>
+                {langMenuOpen && (
+                  <div className="absolute top-full right-0 mt-1 bg-black border border-yolo-gray shadow-lg z-50 min-w-[60px]">
+                    {availableLanguages.map((lang) => (
+                      <button
+                        key={lang}
+                        onClick={() => { soundManager.playClick(); setLanguage(lang); setLangMenuOpen(false); }}
+                        className={`block w-full px-3 py-2 text-center text-xs font-mono font-bold transition-all
+                          ${lang === language ? 'bg-yolo-lime text-black' : 'text-white hover:bg-yolo-gray'}`}
+                      >
+                        {lang.toUpperCase()}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Mobile Nav - Hamburger Menu */}
+            <div className="flex md:hidden items-center gap-2" ref={mobileMenuRef}>
+              {/* User button always visible on mobile */}
+              {user ? (
+                <button
+                  onClick={() => { handleModeChange(AppMode.PROFILE); setMobileMenuOpen(false); }}
+                  className={`p-2 rounded-full border transition-all
+                    ${mode === AppMode.PROFILE
+                      ? 'bg-yolo-lime text-black border-yolo-lime' 
+                      : 'text-white border-transparent hover:border-yolo-gray'
+                    }`}
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              ) : (
+                <button
+                  onClick={() => setAuthModalOpen(true)}
+                  className="p-2 rounded-full border border-yolo-pink text-yolo-pink hover:bg-yolo-pink hover:text-black transition-all"
+                >
+                  <User className="w-4 h-4" />
+                </button>
+              )}
+              
+              {/* Hamburger button */}
               <button
-                onClick={() => setAuthModalOpen(true)}
-                onMouseEnter={() => soundManager.playHover()}
-                className="flex items-center space-x-2 px-3 py-2 rounded-full border border-yolo-pink text-yolo-pink hover:bg-yolo-pink hover:text-black transition-all duration-300 font-mono text-xs md:text-sm whitespace-nowrap"
+                onClick={() => { soundManager.playClick(); setMobileMenuOpen(!mobileMenuOpen); }}
+                className={`p-2 rounded-full border transition-all
+                  ${mobileMenuOpen ? 'border-yolo-lime text-yolo-lime' : 'text-white border-transparent hover:border-yolo-gray'}`}
               >
-                <User className="w-4 h-4" />
-                <span className="hidden lg:inline">LOGIN</span>
+                {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
               </button>
-            )}
+
+              {/* Mobile Dropdown Menu */}
+              {mobileMenuOpen && (
+                <div className="absolute top-full right-3 mt-2 bg-black border border-yolo-gray shadow-xl z-50 min-w-[180px]">
+                  {[
+                    { target: AppMode.HOME, icon: Terminal, label: t.nav.home },
+                    { target: AppMode.MANIFESTO, icon: FileText, label: t.nav.manifesto },
+                    { target: AppMode.DARE, icon: Zap, label: t.nav.fate },
+                    { target: AppMode.COIN, icon: CircleDollarSign, label: t.nav.coin },
+                    { target: AppMode.STATS, icon: Activity, label: t.nav.data },
+                    { target: AppMode.WALL, icon: Trophy, label: 'WALL' },
+                    { target: AppMode.MERCH, icon: ShoppingBag, label: t.nav.merch || 'MERCH' },
+                  ].map(({ target, icon: Icon, label }) => (
+                    <button
+                      key={target}
+                      onClick={() => { handleModeChange(target); setMobileMenuOpen(false); }}
+                      className={`flex items-center gap-3 w-full px-4 py-3 text-left text-sm font-mono transition-all
+                        ${mode === target 
+                          ? 'bg-yolo-lime text-black' 
+                          : 'text-white hover:bg-yolo-gray/50'
+                        }`}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </button>
+                  ))}
+                  
+                  {/* Language options in mobile menu */}
+                  <div className="border-t border-yolo-gray">
+                    <div className="flex">
+                      {availableLanguages.map((lang) => (
+                        <button
+                          key={lang}
+                          onClick={() => { soundManager.playClick(); setLanguage(lang); setMobileMenuOpen(false); }}
+                          className={`flex-1 px-3 py-3 text-center text-xs font-mono font-bold transition-all
+                            ${lang === language ? 'bg-yolo-lime text-black' : 'text-white hover:bg-yolo-gray/50'}`}
+                        >
+                          {lang.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </nav>
       )}
@@ -187,7 +255,7 @@ const AppContent: React.FC = () => {
         )}
 
         {mode === AppMode.HOME && (
-          <div className="min-h-screen pt-32 pb-12 px-6 flex flex-col items-center">
+          <div className="min-h-screen pt-16 md:pt-20 pb-12 px-4 md:px-6 flex flex-col items-center">
             {/* Ticker Tape - Fixed Ghosting by using flexbox instead of absolute positioning */}
             <div className="w-full overflow-hidden whitespace-nowrap bg-yolo-lime text-yolo-black font-mono font-bold py-2 mb-16 transform -rotate-1 flex">
               <div className="animate-marquee shrink-0 flex items-center min-w-full">
@@ -290,13 +358,13 @@ const AppContent: React.FC = () => {
         {mode === AppMode.MERCH && <Merch />}
 
         {mode === AppMode.DARE && (
-          <div className="min-h-[100dvh] pt-24 bg-yolo-black">
+          <div className="min-h-[100dvh] pt-14 md:pt-16 bg-yolo-black">
              <DareGenerator />
           </div>
         )}
 
         {mode === AppMode.STATS && (
-          <div className="min-h-[100dvh] pt-24 bg-yolo-black flex items-center justify-center">
+          <div className="min-h-[100dvh] pt-14 md:pt-16 bg-yolo-black flex items-center justify-center">
              <RegretChart />
           </div>
         )}

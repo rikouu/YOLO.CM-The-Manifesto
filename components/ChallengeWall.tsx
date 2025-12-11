@@ -26,7 +26,7 @@ const ChallengeWall: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-yolo-black pt-20 pb-12 px-4">
+    <div className="min-h-screen bg-yolo-black pt-16 md:pt-20 pb-12 px-3 md:px-4">
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mb-2">{t.title}</h1>

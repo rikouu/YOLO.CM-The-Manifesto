@@ -114,7 +114,7 @@ const Profile: React.FC = () => {
 
 
   return (
-    <div className="min-h-screen bg-yolo-black pt-20 pb-12 px-4">
+    <div className="min-h-screen bg-yolo-black pt-16 md:pt-20 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* 头部 */}
         <div className="relative bg-[#111] border-2 border-yolo-gray/50 p-6 mb-6">

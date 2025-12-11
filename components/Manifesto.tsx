@@ -6,7 +6,7 @@ const Manifesto: React.FC = () => {
   const { t } = useLanguage();
 
   return (
-    <div className="min-h-screen bg-yolo-black flex flex-col items-center pt-32 pb-20 px-6 relative overflow-hidden">
+    <div className="min-h-screen bg-yolo-black flex flex-col items-center pt-16 md:pt-20 pb-12 px-4 md:px-6 relative overflow-hidden">
       {/* Background Graphic */}
       <div className="absolute top-0 right-0 text-[40vw] font-black text-yolo-gray/10 leading-none select-none pointer-events-none -mr-20 -mt-20">
         YOLO
