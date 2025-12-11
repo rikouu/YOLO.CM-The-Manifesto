@@ -131,6 +131,12 @@
         backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.1);
       }
+      /* 加载进度条动画 */
+      @keyframes loading {
+        0% { transform: translateX(-100%); }
+        50% { transform: translateX(100%); }
+        100% { transform: translateX(300%); }
+      }
       /* 图标呼吸效果动画 - 粉色 */
       @keyframes breathe-icon-pink {
         0%, 100% { 

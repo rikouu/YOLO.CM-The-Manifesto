@@ -463,6 +463,30 @@ const DareGenerator: React.FC = () => {
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-4 md:p-8 flex flex-col items-center">
       
+      {/* 生成图片加载遮罩 */}
+      {generatingImage && (
+        <div className="fixed inset-0 z-[100] bg-black/95 flex flex-col items-center justify-center">
+          <div className="relative">
+            {/* 旋转边框 */}
+            <div className="w-32 h-32 border-4 border-yolo-lime/30 rounded-lg animate-pulse" />
+            <div className="absolute inset-0 w-32 h-32 border-4 border-transparent border-t-yolo-lime rounded-lg animate-spin" />
+            {/* 中心图标 */}
+            <div className="absolute inset-0 flex items-center justify-center">
+              <Download className="w-10 h-10 text-yolo-lime animate-bounce" />
+            </div>
+          </div>
+          <p className="mt-6 text-yolo-lime font-mono text-sm uppercase tracking-widest animate-pulse">
+            {language === 'zh' ? '正在生成挑战卡...' : 
+             language === 'ja' ? 'カード生成中...' :
+             'Generating card...'}
+          </p>
+          <div className="mt-4 w-48 h-1 bg-yolo-gray overflow-hidden rounded-full">
+            <div className="h-full bg-yolo-lime animate-[loading_1.5s_ease-in-out_infinite]" 
+                 style={{ width: '30%', animation: 'loading 1.5s ease-in-out infinite' }} />
+          </div>
+        </div>
+      )}
+
       {/* 图片预览弹窗 - 3:4 比例图片，缩放适应屏幕 */}
       {previewImage && (
         <div 
@@ -803,9 +827,16 @@ const DareGenerator: React.FC = () => {
                     onClick={generateImage}
                     disabled={generatingImage}
                     onMouseEnter={() => soundManager.playHover()}
-                    className="px-6 py-4 border-2 border-yolo-white text-yolo-white hover:bg-yolo-gray hover:text-white transition-colors flex items-center gap-2 font-mono uppercase text-sm disabled:opacity-50"
+                    className="px-6 py-4 border-2 border-yolo-white text-yolo-white hover:bg-yolo-gray hover:text-white transition-colors flex items-center gap-2 font-mono uppercase text-sm disabled:opacity-50 disabled:cursor-wait"
                   >
-                    <Download className="w-4 h-4" /> {t.dare.download}
+                    {generatingImage ? (
+                      <RefreshCw className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <Download className="w-4 h-4" />
+                    )}
+                    {generatingImage 
+                      ? (language === 'zh' ? '生成中...' : language === 'ja' ? '生成中...' : 'Creating...')
+                      : t.dare.download}
                   </button>
 
                   <button 
