@@ -117,10 +117,10 @@ const Profile: React.FC = () => {
     <div className="min-h-screen bg-yolo-black pt-16 md:pt-20 pb-12 px-4">
       <div className="max-w-2xl mx-auto">
         {/* 头部 */}
-        <div className="relative bg-[#111] border-2 border-yolo-gray/50 p-6 mb-6">
-          <div className="flex items-start gap-6">
-            <div className="relative group">
-              <div className="w-24 h-24 rounded-full border-4 border-yolo-lime overflow-hidden bg-yolo-gray">
+        <div className="relative bg-[#111] border-2 border-yolo-gray/50 p-4 sm:p-6 mb-6">
+          <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-6">
+            <div className="relative group flex-shrink-0">
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-yolo-lime overflow-hidden bg-yolo-gray">
                 {user.avatar ? (
                   <img src={getAssetUrl(user.avatar)} alt="" className="w-full h-full object-cover" />
                 ) : (
@@ -135,22 +135,22 @@ const Profile: React.FC = () => {
               </label>
             </div>
 
-            <div className="flex-1">
+            <div className="flex-1 w-full text-center sm:text-left">
               {editing ? (
                 <div className="space-y-3">
                   <input type="text" value={nickname} onChange={e => setNickname(e.target.value)}
                     className="w-full bg-black border border-yolo-gray text-white px-3 py-2 font-mono focus:border-yolo-lime focus:outline-none" />
                   <textarea value={bio} onChange={e => setBio(e.target.value)} placeholder={t.bio} rows={2}
                     className="w-full bg-black border border-yolo-gray text-white px-3 py-2 font-mono text-sm focus:border-yolo-lime focus:outline-none resize-none" />
-                  <button onClick={handleSave} className="px-4 py-2 bg-yolo-lime text-black font-bold text-sm flex items-center gap-2">
+                  <button onClick={handleSave} className="px-4 py-2 bg-yolo-lime text-black font-bold text-sm flex items-center gap-2 mx-auto sm:mx-0">
                     <Check className="w-4 h-4" /> {t.save}
                   </button>
                 </div>
               ) : (
                 <>
-                  <div className="flex items-center gap-3 mb-2">
-                    <h2 className="text-2xl font-black text-white">{user.nickname || user.username}</h2>
-                    <button onClick={() => setEditing(true)} className="text-white/40 hover:text-yolo-lime"><Edit2 className="w-4 h-4" /></button>
+                  <div className="flex items-center justify-center sm:justify-start gap-3 mb-2">
+                    <h2 className="text-xl sm:text-2xl font-black text-white truncate">{user.nickname || user.username}</h2>
+                    <button onClick={() => setEditing(true)} className="text-white/40 hover:text-yolo-lime flex-shrink-0"><Edit2 className="w-4 h-4" /></button>
                   </div>
                   <p className="text-white/40 font-mono text-sm mb-3">@{user.username}</p>
                   {user.bio && <p className="text-white/60 text-sm">{user.bio}</p>}
@@ -159,24 +159,24 @@ const Profile: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-6 mt-6 pt-6 border-t border-yolo-gray/50">
-            <div className="text-center">
-              <div className="text-3xl font-black text-yolo-lime">{challenges.length}</div>
-              <div className="text-xs text-white/40 uppercase font-mono">{t.challenges}</div>
+          <div className="flex flex-wrap items-center justify-center sm:justify-start gap-4 sm:gap-6 mt-6 pt-6 border-t border-yolo-gray/50">
+            <div className="text-center min-w-[60px]">
+              <div className="text-2xl sm:text-3xl font-black text-yolo-lime">{challenges.length}</div>
+              <div className="text-[10px] sm:text-xs text-white/40 uppercase font-mono">{t.challenges}</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-black text-yolo-pink">{completedCount}</div>
-              <div className="text-xs text-white/40 uppercase font-mono">{t.completed}</div>
+            <div className="text-center min-w-[60px]">
+              <div className="text-2xl sm:text-3xl font-black text-yolo-pink">{completedCount}</div>
+              <div className="text-[10px] sm:text-xs text-white/40 uppercase font-mono">{t.completed}</div>
             </div>
-            <div className="text-center">
-              <div className="text-3xl font-black text-red-500 flex items-center justify-center gap-1">
-                <Heart className="w-6 h-6 fill-current" /> {userLikes}
+            <div className="text-center min-w-[60px]">
+              <div className="text-2xl sm:text-3xl font-black text-red-500 flex items-center justify-center gap-1">
+                <Heart className="w-5 h-5 sm:w-6 sm:h-6 fill-current" /> {userLikes}
               </div>
-              <div className="text-xs text-white/40 uppercase font-mono">{t.likes}</div>
+              <div className="text-[10px] sm:text-xs text-white/40 uppercase font-mono">{t.likes}</div>
             </div>
             
             <button onClick={handleCheckIn} disabled={checkedIn || checkingIn}
-              className={`ml-auto px-4 py-2 font-bold text-sm flex items-center gap-2 transition-all ${
+              className={`w-full sm:w-auto sm:ml-auto mt-2 sm:mt-0 px-4 py-2 font-bold text-sm flex items-center justify-center gap-2 transition-all ${
                 checkedIn ? 'bg-white/10 text-white/40 cursor-default' : 'bg-yolo-lime text-black hover:bg-white'
               }`}>
               <Calendar className="w-4 h-4" />

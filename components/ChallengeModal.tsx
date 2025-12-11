@@ -7,12 +7,13 @@ import { useLanguage } from '../contexts/LanguageContext';
 interface Props {
   challengeId: string;
   onClose: () => void;
+  onLoginRequired?: () => void;
 }
 
 // 常用 emoji 列表
 const EMOJIS = ['😀', '😂', '🤣', '😍', '🥰', '😎', '🤩', '🥳', '😤', '💪', '🔥', '❤️', '💯', '👏', '🙌', '✨', '⚡', '🎉', '🏆', '💀', '☠️', '🤘', '👊', '🫡'];
 
-const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
+const ChallengeModal: React.FC<Props> = ({ challengeId, onClose, onLoginRequired }) => {
   const [challenge, setChallenge] = useState<Challenge | null>(null);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
@@ -21,6 +22,7 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
   const [submitting, setSubmitting] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const commentInputRef = React.useRef<HTMLInputElement>(null);
   const { user, refreshUser } = useAuth();
   const { language } = useLanguage();
 
@@ -34,6 +36,15 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
     loadData();
   }, [challengeId]);
 
+  // 锁定 body 滚动，防止背景滚动
+  useEffect(() => {
+    const originalStyle = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = originalStyle;
+    };
+  }, []);
+
   const loadData = async () => {
     setLoading(true);
     const [c, cmts] = await Promise.all([getChallengeDetail(challengeId), getComments(challengeId)]);
@@ -43,16 +54,30 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
   };
 
   const handleLike = async () => {
-    if (!user || liking) return;
+    if (!user) {
+      onLoginRequired?.();
+      return;
+    }
+    if (liking) return;
     setLiking(true);
     try {
       const result = await toggleLike(challengeId);
       setChallenge(prev => prev ? { ...prev, like_count: result.like_count, liked_by_me: result.liked } : null);
       refreshUser();
     } catch (err: any) {
-      if (err.message?.includes('Unauthorized')) alert(t.login);
+      if (err.message?.includes('Unauthorized')) onLoginRequired?.();
     }
     setLiking(false);
+  };
+
+  const handleCommentClick = () => {
+    if (!user) {
+      onLoginRequired?.();
+      return;
+    }
+    // 滚动到评论输入框并聚焦
+    commentInputRef.current?.focus();
+    commentInputRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   };
 
   const handleComment = async (e: React.FormEvent) => {
@@ -98,20 +123,39 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
     );
   }
 
+  const handleBackdropClick = (e: React.MouseEvent | React.TouchEvent) => {
+    // 只有点击背景时才关闭，不是滑动
+    if (e.target === e.currentTarget) {
+      onClose();
+    }
+  };
+
   return (
-    <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 overflow-y-auto" onClick={onClose}>
-      <div className="relative w-full max-w-4xl bg-[#0a0a0a] border-2 border-yolo-white my-4 animate-in zoom-in duration-200" onClick={e => e.stopPropagation()}>
+    <div className="fixed inset-0 z-[100]">
+      {/* 背景遮罩 */}
+      <div className="absolute inset-0 bg-black/90" onClick={onClose} />
+      
+      {/* 滚动内容区 - 移动端可滚动，桌面端居中 */}
+      <div 
+        className="relative h-full overflow-y-auto md:overflow-hidden md:flex md:items-center md:justify-center"
+        style={{ WebkitOverflowScrolling: 'touch' }}
+      >
+        <div className="min-h-full md:min-h-0 flex items-start md:items-center justify-center pt-16 md:pt-0 px-4 md:px-8 pb-4 md:pb-0">
+          {/* 3D 卡片容器 - 桌面端限制最大高度 */}
+          <div 
+            className="relative w-full max-w-lg md:max-w-4xl md:max-h-[85vh] bg-[#0a0a0a] border-2 border-yolo-lime/50 animate-in zoom-in duration-300 shadow-[0_20px_40px_-10px_rgba(204,255,0,0.3),8px_8px_0_0_rgba(255,0,204,0.3)] transition-all duration-300 md:flex md:flex-col"
+          >
         {/* 关闭按钮 */}
-        <button onClick={onClose} className="absolute -top-3 -right-3 w-10 h-10 bg-yolo-pink text-black flex items-center justify-center hover:bg-white transition-colors z-20 border-2 border-white">
-          <X className="w-6 h-6" />
+        <button onClick={onClose} className="absolute -top-3 -right-3 w-10 h-10 bg-yolo-pink text-black flex items-center justify-center hover:bg-white hover:scale-110 transition-all z-20 rounded-full shadow-lg border-2 border-black">
+          <X className="w-5 h-5" />
         </button>
 
-        <div className="flex flex-col md:flex-row">
-          {/* 左侧：图片 */}
+        <div className="flex flex-col md:flex-row md:h-full md:overflow-hidden">
+          {/* 左侧：图片 - 移动端隐藏或缩小 */}
           {challenge.photo_url && (
-            <div className="md:w-1/2 bg-black flex items-center justify-center cursor-pointer group" onClick={() => setShowFullImage(true)}>
-              <div className="relative w-full">
-                <img src={getAssetUrl(challenge.photo_url)} alt="" className="w-full h-auto max-h-[70vh] object-contain" />
+            <div className="hidden md:flex md:w-1/2 bg-black items-center justify-center cursor-pointer group flex-shrink-0" onClick={() => setShowFullImage(true)}>
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img src={getAssetUrl(challenge.photo_url)} alt="" className="w-full h-auto max-h-full object-contain" />
                 <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
                   <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-mono transition-opacity">
                     {language === 'zh' ? '点击查看大图' : language === 'ja' ? 'クリックで拡大' : 'Click to enlarge'}
@@ -121,58 +165,77 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
             </div>
           )}
 
-          {/* 右侧：详情 */}
-          <div className={`${challenge.photo_url ? 'md:w-1/2' : 'w-full'} flex flex-col max-h-[80vh]`}>
+          {/* 右侧：详情 - 桌面端内部滚动 */}
+          <div className={`${challenge.photo_url ? 'md:w-1/2' : 'w-full'} flex flex-col md:overflow-y-auto`}>
             {/* 用户信息 */}
-            <div className="p-4 border-b border-yolo-gray/50 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-yolo-lime flex items-center justify-center text-black font-black overflow-hidden">
+            <div className="p-3 md:p-4 border-b border-yolo-gray/50 flex items-center gap-2 md:gap-3 flex-shrink-0">
+              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-yolo-lime flex items-center justify-center text-black font-black text-sm overflow-hidden flex-shrink-0">
                 {challenge.user?.avatar ? (
                   <img src={getAssetUrl(challenge.user.avatar)} alt="" className="w-full h-full object-cover" />
                 ) : (
                   (challenge.user?.nickname || challenge.user?.username || '?')[0].toUpperCase()
                 )}
               </div>
-              <div>
-                <div className="font-bold text-white">{challenge.user?.nickname || challenge.user?.username}</div>
-                <div className="text-xs text-white/40 font-mono">@{challenge.user?.username}</div>
+              <div className="min-w-0 flex-1">
+                <div className="font-bold text-white text-sm md:text-base truncate">{challenge.user?.nickname || challenge.user?.username}</div>
+                <div className="text-[10px] md:text-xs text-white/40 font-mono truncate">@{challenge.user?.username}</div>
               </div>
-              <div className="ml-auto bg-yolo-pink text-black px-2 py-1 text-xs font-black">{challenge.category}</div>
+              <div className="bg-yolo-pink text-black px-2 py-0.5 md:py-1 text-[10px] md:text-xs font-black flex-shrink-0">{challenge.category}</div>
             </div>
 
             {/* 挑战内容 */}
-            <div className="p-4 border-b border-yolo-gray/50">
-              <h2 className="text-xl font-black text-white mb-2">{challenge.title}</h2>
-              <p className="text-white/60 mb-3">{challenge.description}</p>
-              <div className="flex gap-4 text-xs font-mono">
+            <div className="p-3 md:p-4 border-b border-yolo-gray/50 flex-shrink-0">
+              <h2 className="text-base md:text-xl font-black text-white mb-2">{challenge.title}</h2>
+              <p className="text-white/60 text-sm md:text-base mb-2 md:mb-3">{challenge.description}</p>
+              <div className="flex gap-3 md:gap-4 text-[10px] md:text-xs font-mono">
                 <span className="flex items-center gap-1 text-yolo-lime"><Clock className="w-3 h-3" /> {challenge.estimated_time}</span>
                 <span className="flex items-center gap-1 text-yolo-pink"><Skull className="w-3 h-3" /> {challenge.difficulty}/100</span>
               </div>
             </div>
 
             {/* 点赞和评论数 */}
-            <div className="p-4 border-b border-yolo-gray/50 flex items-center gap-6">
+            <div className="p-3 md:p-4 border-b border-yolo-gray/50 flex items-center gap-4 md:gap-6 flex-shrink-0">
               <button 
                 onClick={handleLike}
                 disabled={!user || liking}
-                className={`flex items-center gap-2 transition-all ${challenge.liked_by_me ? 'text-yolo-pink scale-110' : 'text-white/70 hover:text-yolo-pink hover:scale-105'} disabled:opacity-50`}
+                className={`flex items-center gap-1.5 md:gap-2 transition-all ${challenge.liked_by_me ? 'text-yolo-pink scale-110' : 'text-white/70 hover:text-yolo-pink hover:scale-105'} disabled:opacity-50`}
               >
-                <Heart className={`w-6 h-6 ${challenge.liked_by_me ? 'fill-current' : ''}`} />
-                <span className="font-bold text-white">{challenge.like_count || 0}</span>
+                <Heart className={`w-5 h-5 md:w-6 md:h-6 ${challenge.liked_by_me ? 'fill-current' : ''}`} />
+                <span className="font-bold text-white text-sm md:text-base">{challenge.like_count || 0}</span>
               </button>
-              <div className="flex items-center gap-2 text-white/70">
-                <MessageCircle className="w-6 h-6" />
-                <span className="font-bold text-white">{challenge.comment_count || 0}</span>
-              </div>
+              <button 
+                onClick={handleCommentClick}
+                className="flex items-center gap-1.5 md:gap-2 text-white/70 hover:text-yolo-lime transition-colors"
+              >
+                <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
+                <span className="font-bold text-white text-sm md:text-base">{challenge.comment_count || 0}</span>
+              </button>
               {user && (
-                <div className="ml-auto text-xs text-white/50 font-mono flex items-center gap-1">
+                <div className="ml-auto text-[10px] md:text-xs text-white/50 font-mono flex items-center gap-1">
                   <Heart className="w-3 h-3 text-yolo-pink fill-current" /> {user.stats?.likes || user.likes || 0}
                 </div>
               )}
             </div>
 
 
-            {/* 评论区 */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-[150px] max-h-[300px]">
+            {/* 移动端图片预览 */}
+            {challenge.photo_url && (
+              <div className="md:hidden border-b border-yolo-gray/50 p-2">
+                <button 
+                  type="button"
+                  className="relative w-full cursor-pointer"
+                  onClick={(e) => { e.stopPropagation(); setShowFullImage(true); }}
+                >
+                  <img src={getAssetUrl(challenge.photo_url)} alt="" className="w-full h-auto max-h-[25vh] object-contain bg-black/50 rounded" />
+                  <div className="absolute bottom-2 right-2 bg-black/80 text-yolo-lime text-[10px] px-2 py-1 rounded font-mono">
+                    {language === 'zh' ? '点击放大' : language === 'ja' ? 'タップで拡大' : 'Tap to enlarge'}
+                  </div>
+                </button>
+              </div>
+            )}
+
+            {/* 评论区 - 移动端限制高度，桌面端自适应 */}
+            <div className="p-3 md:p-4 space-y-3 md:space-y-4 max-h-[30vh] md:max-h-none md:flex-1 overflow-y-auto">
               <h3 className="text-sm font-bold text-white/50 uppercase tracking-wider">{t.comments}</h3>
               {comments.length === 0 ? (
                 <p className="text-white/30 text-sm font-mono">{t.noComments}</p>
@@ -202,51 +265,54 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose }) => {
 
             {/* 评论输入 */}
             {user ? (
-              <div className="p-4 border-t border-yolo-gray/50">
+              <div className="p-2 md:p-4 border-t border-yolo-gray/50 flex-shrink-0">
                 {/* Emoji 选择器 */}
                 {showEmoji && (
-                  <div className="mb-2 p-2 bg-black/50 border border-yolo-gray/50 rounded flex flex-wrap gap-1">
+                  <div className="mb-2 p-2 bg-black/50 border border-yolo-gray/50 rounded flex flex-wrap gap-1 max-h-[120px] overflow-y-auto">
                     {EMOJIS.map(emoji => (
                       <button
                         key={emoji}
                         type="button"
                         onClick={() => insertEmoji(emoji)}
-                        className="w-8 h-8 hover:bg-yolo-lime/20 rounded flex items-center justify-center text-lg transition-colors"
+                        className="w-7 h-7 md:w-8 md:h-8 hover:bg-yolo-lime/20 rounded flex items-center justify-center text-base md:text-lg transition-colors"
                       >
                         {emoji}
                       </button>
                     ))}
                   </div>
                 )}
-                <form onSubmit={handleComment} className="flex gap-2">
+                <form onSubmit={handleComment} className="flex gap-1.5 md:gap-2">
                   <button
                     type="button"
                     onClick={() => setShowEmoji(!showEmoji)}
-                    className={`px-3 py-2 border transition-colors ${showEmoji ? 'border-yolo-lime text-yolo-lime' : 'border-yolo-gray/50 text-white/50 hover:text-yolo-lime'}`}
+                    className={`px-2 md:px-3 py-2 border transition-colors ${showEmoji ? 'border-yolo-lime text-yolo-lime' : 'border-yolo-gray/50 text-white/50 hover:text-yolo-lime'}`}
                   >
-                    <Smile className="w-5 h-5" />
+                    <Smile className="w-4 h-4 md:w-5 md:h-5" />
                   </button>
                   <input
+                    ref={commentInputRef}
                     type="text"
                     value={newComment}
                     onChange={e => setNewComment(e.target.value)}
                     placeholder={t.placeholder}
-                    className="flex-1 bg-black border border-yolo-gray/50 text-white px-3 py-2 text-sm focus:border-yolo-lime focus:outline-none"
+                    className="flex-1 min-w-0 bg-black border border-yolo-gray/50 text-white px-2 md:px-3 py-2 text-sm focus:border-yolo-lime focus:outline-none"
                   />
                   <button
                     type="submit"
                     disabled={!newComment.trim() || submitting}
-                    className="px-4 py-2 bg-yolo-lime text-black font-bold disabled:opacity-50 hover:bg-white transition-colors"
+                    className="px-3 md:px-4 py-2 bg-yolo-lime text-black font-bold disabled:opacity-50 hover:bg-white transition-colors"
                   >
                     <Send className="w-4 h-4" />
                   </button>
                 </form>
               </div>
             ) : (
-              <div className="p-4 border-t border-yolo-gray/50 text-center text-white/40 text-sm font-mono">
+              <div className="p-3 md:p-4 border-t border-yolo-gray/50 text-center text-white/40 text-xs md:text-sm font-mono flex-shrink-0">
                 {t.login}
               </div>
             )}
+          </div>
+        </div>
           </div>
         </div>
       </div>

@@ -3,11 +3,13 @@ import { getChallengeWall, Challenge, getAssetUrl, formatLikesCount } from '../s
 import { useLanguage } from '../contexts/LanguageContext';
 import { Trophy, Heart, MessageCircle } from 'lucide-react';
 import ChallengeModal from './ChallengeModal';
+import AuthModal from './AuthModal';
 
 const ChallengeWall: React.FC = () => {
   const [challenges, setChallenges] = useState<Challenge[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { language } = useLanguage();
 
   const t = {
@@ -43,14 +45,21 @@ const ChallengeWall: React.FC = () => {
             {t.empty}
           </div>
         ) : (
-          <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+          <div className="columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-3 md:gap-4 space-y-3 md:space-y-4">
             {challenges.map((c) => (
               <ChallengeCard key={c.id} challenge={c} onClick={() => setSelectedId(c.id)} />
             ))}
           </div>
         )}
       </div>
-      {selectedId && <ChallengeModal challengeId={selectedId} onClose={handleModalClose} />}
+      {selectedId && (
+        <ChallengeModal 
+          challengeId={selectedId} 
+          onClose={handleModalClose} 
+          onLoginRequired={() => setShowAuthModal(true)}
+        />
+      )}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 };
