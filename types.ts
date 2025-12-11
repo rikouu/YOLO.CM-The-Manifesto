@@ -4,7 +4,12 @@ export interface Challenge {
   difficulty: number; // 1-100
   category: 'SOCIAL' | 'PHYSICAL' | 'MENTAL' | 'CHAOS';
   estimatedTime: string;
+  environment?: 'indoor' | 'outdoor' | 'online';
+  socialLevel?: 'solo' | 'one-on-one' | 'strangers' | 'group';
 }
+
+export type Environment = 'any' | 'indoor' | 'outdoor' | 'online';
+export type SocialLevel = 'any' | 'solo' | 'one-on-one' | 'strangers' | 'group';
 
 export enum AppMode {
   INTRO = 'INTRO',

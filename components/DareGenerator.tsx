@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateYoloChallenge } from '../services/geminiService';
-import { Challenge } from '../types';
-import { RefreshCw, Zap, Clock, Skull, Download, Trophy, ArrowRight, Binary, X, Camera, Upload, Check, Moon, Compass, Sofa, Flame, UtensilsCrossed, Users, Palette, Heart, Dumbbell, Shuffle } from 'lucide-react';
+import { Challenge, Environment, SocialLevel } from '../types';
+import { RefreshCw, Zap, Clock, Skull, Download, Trophy, ArrowRight, Binary, X, Camera, Upload, Check, Moon, Compass, Sofa, Flame, UtensilsCrossed, Users, Palette, Heart, Dumbbell, Shuffle, Home, TreePine, Wifi, User, UserPlus, UsersRound, Settings2 } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { soundManager } from '../services/soundService';
@@ -23,6 +23,9 @@ const DareGenerator: React.FC = () => {
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
+  const [environment, setEnvironment] = useState<Environment>('any');
+  const [socialLevel, setSocialLevel] = useState<SocialLevel>('any');
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -77,7 +80,12 @@ const DareGenerator: React.FC = () => {
     setCompleted(false);
     setLoadingMsgIndex(0);
     try {
-      const result = await generateYoloChallenge(selectedMood, language);
+      const result = await generateYoloChallenge({
+        mood: selectedMood,
+        language,
+        environment,
+        socialLevel
+      });
       setChallenge(result);
       soundManager.playSuccess();
     } catch (e) {
@@ -579,18 +587,101 @@ const DareGenerator: React.FC = () => {
       </div>
 
       {!challenge && !loading && !completed && !activeChallenge && (
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full">
-          {moods.map((m) => (
+        <div className="w-full space-y-6">
+          {/* 筛选器切换按钮 */}
+          <div className="flex justify-center">
             <button
-              key={m.key}
-              onClick={() => handleGenerate(m.key)}
-              onMouseEnter={() => soundManager.playHover()}
-              className="h-20 md:h-24 border border-yolo-gray hover:border-yolo-lime hover:bg-yolo-lime/10 text-yolo-white hover:text-yolo-lime transition-all duration-200 font-mono text-sm uppercase tracking-wider flex flex-col items-center justify-center gap-2 group"
+              onClick={() => setShowFilters(!showFilters)}
+              className={`flex items-center gap-2 px-4 py-2 border rounded-full font-mono text-xs uppercase tracking-wider transition-all ${
+                showFilters || environment !== 'any' || socialLevel !== 'any'
+                  ? 'border-yolo-lime text-yolo-lime bg-yolo-lime/10'
+                  : 'border-yolo-gray text-yolo-gray hover:border-white hover:text-white'
+              }`}
             >
-              <m.Icon className="w-6 h-6 group-hover:scale-125 transition-transform" />
-              <span className="group-hover:scale-105 transition-transform text-xs">{getMoodLabel(m.key)}</span>
+              <Settings2 className="w-4 h-4" />
+              {language === 'zh' ? '筛选条件' : language === 'ja' ? 'フィルター' : 'Filters'}
+              {(environment !== 'any' || socialLevel !== 'any') && (
+                <span className="w-2 h-2 rounded-full bg-yolo-pink" />
+              )}
             </button>
-          ))}
+          </div>
+
+          {/* 筛选选项 */}
+          {showFilters && (
+            <div className="bg-black/50 border border-yolo-gray/30 p-4 space-y-4 animate-in slide-in-from-top duration-200">
+              {/* 环境筛选 */}
+              <div>
+                <p className="text-white/50 text-xs font-mono mb-2 uppercase">
+                  {language === 'zh' ? '环境' : language === 'ja' ? '環境' : 'Environment'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'any', label: { en: 'Any', zh: '不限', ja: '指定なし' }, Icon: Shuffle },
+                    { value: 'indoor', label: { en: 'Indoor', zh: '室内', ja: '室内' }, Icon: Home },
+                    { value: 'outdoor', label: { en: 'Outdoor', zh: '户外', ja: '屋外' }, Icon: TreePine },
+                    { value: 'online', label: { en: 'Online', zh: '线上', ja: 'オンライン' }, Icon: Wifi },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setEnvironment(opt.value as Environment)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 border rounded text-xs font-mono transition-all ${
+                        environment === opt.value
+                          ? 'border-yolo-lime bg-yolo-lime/20 text-yolo-lime'
+                          : 'border-yolo-gray/50 text-white/60 hover:border-white hover:text-white'
+                      }`}
+                    >
+                      <opt.Icon className="w-3.5 h-3.5" />
+                      {opt.label[language] || opt.label.en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 社交程度筛选 */}
+              <div>
+                <p className="text-white/50 text-xs font-mono mb-2 uppercase">
+                  {language === 'zh' ? '社交程度' : language === 'ja' ? 'ソーシャルレベル' : 'Social Level'}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {[
+                    { value: 'any', label: { en: 'Any', zh: '不限', ja: '指定なし' }, Icon: Shuffle },
+                    { value: 'solo', label: { en: 'Solo', zh: '独自', ja: 'ソロ' }, Icon: User },
+                    { value: 'one-on-one', label: { en: '1-on-1', zh: '一对一', ja: '1対1' }, Icon: UserPlus },
+                    { value: 'strangers', label: { en: 'Strangers', zh: '陌生人', ja: '見知らぬ人' }, Icon: Users },
+                    { value: 'group', label: { en: 'Group', zh: '群体', ja: 'グループ' }, Icon: UsersRound },
+                  ].map((opt) => (
+                    <button
+                      key={opt.value}
+                      onClick={() => setSocialLevel(opt.value as SocialLevel)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 border rounded text-xs font-mono transition-all ${
+                        socialLevel === opt.value
+                          ? 'border-yolo-pink bg-yolo-pink/20 text-yolo-pink'
+                          : 'border-yolo-gray/50 text-white/60 hover:border-white hover:text-white'
+                      }`}
+                    >
+                      <opt.Icon className="w-3.5 h-3.5" />
+                      {opt.label[language] || opt.label.en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* 心情选择 */}
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+            {moods.map((m) => (
+              <button
+                key={m.key}
+                onClick={() => handleGenerate(m.key)}
+                onMouseEnter={() => soundManager.playHover()}
+                className="h-20 md:h-24 border border-yolo-gray hover:border-yolo-lime hover:bg-yolo-lime/10 text-yolo-white hover:text-yolo-lime transition-all duration-200 font-mono text-sm uppercase tracking-wider flex flex-col items-center justify-center gap-2 group"
+              >
+                <m.Icon className="w-6 h-6 group-hover:scale-125 transition-transform" />
+                <span className="group-hover:scale-105 transition-transform text-xs">{getMoodLabel(m.key)}</span>
+              </button>
+            ))}
+          </div>
         </div>
       )}
 
