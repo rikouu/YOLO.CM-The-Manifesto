@@ -1,0 +1,128 @@
+import React, { useState, useEffect } from 'react';
+import { getChallengeWall, Challenge, getAssetUrl, formatLikesCount } from '../services/authService';
+import { useLanguage } from '../contexts/LanguageContext';
+import { Trophy, Heart, MessageCircle } from 'lucide-react';
+import ChallengeModal from './ChallengeModal';
+
+const ChallengeWall: React.FC = () => {
+  const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const { language } = useLanguage();
+
+  const t = {
+    en: { title: 'CHALLENGE WALL', subtitle: 'Warriors who dared to live', empty: 'No completed challenges yet. Be the first!' },
+    zh: { title: '挑战墙', subtitle: '敢于活出自我的勇士们', empty: '还没有完成的挑战，成为第一个！' },
+    ja: { title: 'チャレンジウォール', subtitle: '生きることを恐れない勇者たち', empty: 'まだ完了したチャレンジがありません。最初になろう！' }
+  }[language] || { title: 'CHALLENGE WALL', subtitle: 'Warriors who dared to live', empty: 'No completed challenges yet. Be the first!' };
+
+  useEffect(() => {
+    getChallengeWall(50).then(data => { setChallenges(data); setLoading(false); });
+  }, []);
+
+  const handleModalClose = () => {
+    setSelectedId(null);
+    getChallengeWall(50).then(setChallenges);
+  };
+
+  return (
+    <div className="min-h-screen bg-yolo-black pt-20 pb-12 px-4">
+      <div className="max-w-6xl mx-auto">
+        <div className="text-center mb-12">
+          <h1 className="text-4xl md:text-6xl font-black text-white uppercase tracking-tighter mb-2">{t.title}</h1>
+          <p className="text-yolo-lime/70 font-mono text-sm tracking-wider">{t.subtitle}</p>
+        </div>
+
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-12 h-12 border-4 border-yolo-lime border-t-transparent rounded-full animate-spin" />
+          </div>
+        ) : challenges.length === 0 ? (
+          <div className="text-center py-20 text-white/40 font-mono">
+            <Trophy className="w-16 h-16 mx-auto mb-4 opacity-30" />
+            {t.empty}
+          </div>
+        ) : (
+          <div className="columns-2 md:columns-3 lg:columns-4 gap-3 space-y-3">
+            {challenges.map((c) => (
+              <ChallengeCard key={c.id} challenge={c} onClick={() => setSelectedId(c.id)} />
+            ))}
+          </div>
+        )}
+      </div>
+      {selectedId && <ChallengeModal challengeId={selectedId} onClose={handleModalClose} />}
+    </div>
+  );
+};
+
+
+// 单独的挑战卡片组件
+const ChallengeCard: React.FC<{ challenge: Challenge; onClick: () => void }> = ({ challenge: c, onClick }) => {
+  return (
+    <div 
+      onClick={onClick}
+      className="break-inside-avoid bg-[#111] border border-white/10 hover:border-yolo-lime/50 transition-all group overflow-hidden cursor-pointer relative"
+    >
+      {/* 图片 - 只显示缩略图 */}
+      {c.photo_url && (
+        <div className="relative aspect-square overflow-hidden">
+          <img 
+            src={getAssetUrl(c.photo_url)} 
+            alt="" 
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+          />
+          {/* 渐变遮罩 */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
+          
+          {/* 分类标签 */}
+          <div className="absolute top-2 left-2 bg-yolo-pink/90 text-black px-2 py-0.5 text-[10px] font-black">
+            {c.category}
+          </div>
+
+          {/* 底部信息覆盖层 */}
+          <div className="absolute bottom-0 left-0 right-0 p-3">
+            {/* 用户信息 */}
+            <div className="flex items-center gap-2 mb-2">
+              <div className="relative">
+                <div className="w-6 h-6 rounded-full bg-yolo-lime flex items-center justify-center text-black font-black text-[10px] overflow-hidden">
+                  {c.user?.avatar ? (
+                    <img src={getAssetUrl(c.user.avatar)} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    (c.user?.nickname || c.user?.username || '?')[0].toUpperCase()
+                  )}
+                </div>
+                {/* 赞数角标 */}
+                {(c.user?.likes || 0) > 0 && (
+                  <div className="absolute -top-1 -right-2 min-w-[14px] h-[14px] bg-yolo-pink text-black text-[8px] font-bold rounded-full flex items-center justify-center px-0.5">
+                    {formatLikesCount(c.user?.likes || 0)}
+                  </div>
+                )}
+              </div>
+              <span className="text-white text-xs font-bold truncate">{c.user?.nickname || c.user?.username}</span>
+            </div>
+
+            {/* 标题 */}
+            <h3 className="font-black text-white text-sm leading-tight line-clamp-2 mb-2">{c.title}</h3>
+
+            {/* 互动数据 - 突出显示 */}
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-1 bg-yolo-pink/20 px-2 py-1 rounded-sm">
+                <Heart className="w-3 h-3 text-yolo-pink fill-current" />
+                <span className="text-white text-xs font-bold">{c.like_count || 0}</span>
+              </div>
+              <div className="flex items-center gap-1 bg-yolo-lime/20 px-2 py-1 rounded-sm">
+                <MessageCircle className="w-3 h-3 text-yolo-lime" />
+                <span className="text-white text-xs font-bold">{c.comment_count || 0}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 底部装饰线 */}
+      <div className="h-0.5 bg-gradient-to-r from-yolo-lime to-yolo-pink" />
+    </div>
+  );
+};
+
+export default ChallengeWall;

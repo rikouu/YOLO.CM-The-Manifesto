@@ -1,0 +1,28 @@
+[
+  {
+    "id": "c2db659d-09b2-425b-aef5-48b369ae89c9",
+    "user_id": "0f85a817-ec31-45ed-ad56-b7ed8f03b691",
+    "title": "Disconnect",
+    "description": "Turn off your phone for exactly 60 minutes. No cheating.",
+    "category": "MENTAL",
+    "difficulty": 40,
+    "estimated_time": "60 mins",
+    "status": "completed",
+    "created_at": "2025-12-11T09:47:37.657Z",
+    "photo_url": "/uploads/1765446464514-fbyrq3p4286.png",
+    "completed_at": "2025-12-11T09:47:44.530Z"
+  },
+  {
+    "id": "c4b65154-a553-4653-b274-9b36f1fa14c8",
+    "user_id": "0f85a817-ec31-45ed-ad56-b7ed8f03b691",
+    "title": "Disconnect",
+    "description": "Turn off your phone for exactly 60 minutes. No cheating.",
+    "category": "MENTAL",
+    "difficulty": 40,
+    "estimated_time": "60 mins",
+    "status": "completed",
+    "created_at": "2025-12-11T09:53:08.076Z",
+    "photo_url": "/uploads/1765446821210-065hnqzhytwo.png",
+    "completed_at": "2025-12-11T09:53:41.217Z"
+  }
+]
