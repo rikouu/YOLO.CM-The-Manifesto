@@ -304,10 +304,11 @@ const AppContent: React.FC = () => {
                 <div 
                   onClick={() => handleModeChange(AppMode.DARE)}
                   onMouseEnter={() => soundManager.playHover()}
-                  className="group cursor-pointer border border-yolo-gray p-8 hover:bg-yolo-pink transition-colors duration-300 relative overflow-hidden h-64 flex flex-col justify-end bg-black/50 backdrop-blur-sm"
+                  className="group cursor-pointer border border-yolo-gray p-8 hover:bg-yolo-pink transition-all duration-300 relative overflow-hidden h-64 flex flex-col justify-end bg-black/50 backdrop-blur-sm"
                 >
-                  <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity transform group-hover:scale-125 duration-500">
-                    <Zap className="w-32 h-32 text-black" />
+                  {/* 图标呼吸效果 */}
+                  <div className="absolute top-0 right-0 p-4 transition-all duration-500 group-hover:opacity-100 group-hover:scale-125">
+                    <Zap className="w-32 h-32 text-yolo-pink/20 group-hover:text-black animate-[breathe-icon-pink_3s_ease-in-out_infinite] group-hover:animate-none" />
                   </div>
                   <h3 className="text-3xl font-bold font-mono mb-2 group-hover:text-black z-10">{t.home.chaosCardTitle}</h3>
                   <p className="text-yolo-gray group-hover:text-black/80 z-10">{t.home.chaosCardDesc}</p>
@@ -316,10 +317,11 @@ const AppContent: React.FC = () => {
                 <div 
                   onClick={() => handleModeChange(AppMode.STATS)}
                   onMouseEnter={() => soundManager.playHover()}
-                  className="group cursor-pointer border border-yolo-gray p-8 hover:bg-yolo-lime transition-colors duration-300 relative overflow-hidden h-64 flex flex-col justify-end bg-black/50 backdrop-blur-sm"
+                  className="group cursor-pointer border border-yolo-gray p-8 hover:bg-yolo-lime transition-all duration-300 relative overflow-hidden h-64 flex flex-col justify-end bg-black/50 backdrop-blur-sm"
                 >
-                   <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:opacity-100 transition-opacity transform group-hover:scale-125 duration-500">
-                    <Activity className="w-32 h-32 text-black" />
+                  {/* 图标呼吸效果 */}
+                  <div className="absolute top-0 right-0 p-4 transition-all duration-500 group-hover:opacity-100 group-hover:scale-125">
+                    <Activity className="w-32 h-32 text-yolo-lime/20 group-hover:text-black animate-[breathe-icon-lime_3s_ease-in-out_infinite_0.5s] group-hover:animate-none" />
                   </div>
                   <h3 className="text-3xl font-bold font-mono mb-2 group-hover:text-black z-10">{t.home.statsCardTitle}</h3>
                   <p className="text-yolo-gray group-hover:text-black/80 z-10">{t.home.statsCardDesc}</p>
