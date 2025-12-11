@@ -56,71 +56,73 @@ const ChallengeWall: React.FC = () => {
 };
 
 
-// 单独的挑战卡片组件
+// 单独的挑战卡片组件 - 纯文字卡片，无图片
 const ChallengeCard: React.FC<{ challenge: Challenge; onClick: () => void }> = ({ challenge: c, onClick }) => {
   return (
     <div 
       onClick={onClick}
-      className="break-inside-avoid bg-[#111] border border-white/10 hover:border-yolo-lime/50 transition-all group overflow-hidden cursor-pointer relative"
+      className="break-inside-avoid bg-[#111] border border-white/10 hover:border-yolo-lime/50 transition-all group overflow-hidden cursor-pointer relative p-4"
     >
-      {/* 图片 - 只显示缩略图 */}
-      {c.photo_url && (
-        <div className="relative aspect-square overflow-hidden">
-          <img 
-            src={getAssetUrl(c.photo_url)} 
-            alt="" 
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          {/* 渐变遮罩 */}
-          <div className="absolute inset-0 bg-gradient-to-t from-black via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity" />
-          
-          {/* 分类标签 */}
-          <div className="absolute top-2 left-2 bg-yolo-pink/90 text-black px-2 py-0.5 text-[10px] font-black">
-            {c.category}
-          </div>
-
-          {/* 底部信息覆盖层 */}
-          <div className="absolute bottom-0 left-0 right-0 p-3">
-            {/* 用户信息 */}
-            <div className="flex items-center gap-2 mb-2">
-              <div className="relative">
-                <div className="w-6 h-6 rounded-full bg-yolo-lime flex items-center justify-center text-black font-black text-[10px] overflow-hidden">
-                  {c.user?.avatar ? (
-                    <img src={getAssetUrl(c.user.avatar)} alt="" className="w-full h-full object-cover" />
-                  ) : (
-                    (c.user?.nickname || c.user?.username || '?')[0].toUpperCase()
-                  )}
-                </div>
-                {/* 赞数角标 */}
-                {(c.user?.likes || 0) > 0 && (
-                  <div className="absolute -top-1 -right-2 min-w-[14px] h-[14px] bg-yolo-pink text-black text-[8px] font-bold rounded-full flex items-center justify-center px-0.5">
-                    {formatLikesCount(c.user?.likes || 0)}
-                  </div>
-                )}
-              </div>
-              <span className="text-white text-xs font-bold truncate">{c.user?.nickname || c.user?.username}</span>
-            </div>
-
-            {/* 标题 */}
-            <h3 className="font-black text-white text-sm leading-tight line-clamp-2 mb-2">{c.title}</h3>
-
-            {/* 互动数据 - 突出显示 */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-1 bg-yolo-pink/20 px-2 py-1 rounded-sm">
-                <Heart className="w-3 h-3 text-yolo-pink fill-current" />
-                <span className="text-white text-xs font-bold">{c.like_count || 0}</span>
-              </div>
-              <div className="flex items-center gap-1 bg-yolo-lime/20 px-2 py-1 rounded-sm">
-                <MessageCircle className="w-3 h-3 text-yolo-lime" />
-                <span className="text-white text-xs font-bold">{c.comment_count || 0}</span>
-              </div>
-            </div>
-          </div>
+      {/* 顶部：分类标签 + 用户信息 */}
+      <div className="flex items-center justify-between mb-3">
+        {/* 分类标签 */}
+        <div className="bg-yolo-pink/90 text-black px-2 py-0.5 text-[10px] font-black uppercase">
+          {c.category}
         </div>
+        
+        {/* 用户信息 */}
+        <div className="flex items-center gap-2">
+          <div className="relative">
+            <div className="w-6 h-6 rounded-full bg-yolo-lime flex items-center justify-center text-black font-black text-[10px] overflow-hidden">
+              {c.user?.avatar ? (
+                <img src={getAssetUrl(c.user.avatar)} alt="" className="w-full h-full object-cover" />
+              ) : (
+                (c.user?.nickname || c.user?.username || '?')[0].toUpperCase()
+              )}
+            </div>
+            {/* 赞数角标 */}
+            {(c.user?.likes || 0) > 0 && (
+              <div className="absolute -top-1 -right-2 min-w-[14px] h-[14px] bg-yolo-pink text-black text-[8px] font-bold rounded-full flex items-center justify-center px-0.5">
+                {formatLikesCount(c.user?.likes || 0)}
+              </div>
+            )}
+          </div>
+          <span className="text-white/60 text-xs truncate max-w-[80px]">{c.user?.nickname || c.user?.username}</span>
+        </div>
+      </div>
+
+      {/* 标题 - 完整显示 */}
+      <h3 className="font-black text-white text-base leading-tight mb-2 group-hover:text-yolo-lime transition-colors">
+        {c.title}
+      </h3>
+
+      {/* 描述 - 完整显示 */}
+      {c.description && (
+        <p className="text-white/80 text-sm leading-relaxed mb-3 border-l-2 border-yolo-lime/50 pl-3">
+          {c.description}
+        </p>
       )}
 
+      {/* 底部：互动数据 */}
+      <div className="flex items-center gap-3 pt-2 border-t border-white/5">
+        <div className="flex items-center gap-1">
+          <Heart className="w-3.5 h-3.5 text-yolo-pink" />
+          <span className="text-yolo-pink text-xs font-bold">{c.like_count || 0}</span>
+        </div>
+        <div className="flex items-center gap-1">
+          <MessageCircle className="w-3.5 h-3.5 text-yolo-lime" />
+          <span className="text-yolo-lime text-xs font-bold">{c.comment_count || 0}</span>
+        </div>
+        {/* 难度指示 */}
+        {c.difficulty && (
+          <div className="ml-auto text-white/30 text-[10px] font-mono">
+            ☠ {c.difficulty}/100
+          </div>
+        )}
+      </div>
+
       {/* 底部装饰线 */}
-      <div className="h-0.5 bg-gradient-to-r from-yolo-lime to-yolo-pink" />
+      <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-gradient-to-r from-yolo-lime to-yolo-pink opacity-50 group-hover:opacity-100 transition-opacity" />
     </div>
   );
 };

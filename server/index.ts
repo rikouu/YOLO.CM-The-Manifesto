@@ -158,31 +158,65 @@ app.post('/api/generate-challenge', async (req, res) => {
     const { mood, language = 'en' } = req.body;
     if (!mood) return res.status(400).json({ error: 'mood is required' });
 
-    const prompt = `Generate a unique, slightly chaotic, but safe "YOLO" challenge for a user.
-The user's current mood is: ${mood}.
-The challenge should be something memorable that breaks their routine.
-Make it edgy but legal and safe.
+    // 根据语言构建完整的 prompt
+    const langConfig: Record<string, { instruction: string; example: { title: string; description: string } }> = {
+      zh: {
+        instruction: '用中文回复',
+        example: { title: '街头即兴演唱', description: '在公共场所大声唱一首你喜欢的歌，至少30秒' }
+      },
+      ja: {
+        instruction: '日本語で回答',
+        example: { title: '見知らぬ人に挨拶', description: '今日出会う5人の見知らぬ人に笑顔で挨拶してください' }
+      },
+      en: {
+        instruction: 'Reply in English',
+        example: { title: 'Compliment Strangers', description: 'Give genuine compliments to 3 random strangers today' }
+      }
+    };
 
-IMPORTANT: The content MUST be in language: ${language} (zh=Chinese, ja=Japanese, en=English).
+    const config = langConfig[language] || langConfig.en;
 
-Return ONLY valid JSON:
-{
-  "title": "short catchy title",
-  "description": "specific instruction",
-  "difficulty": 50,
-  "category": "SOCIAL",
-  "estimatedTime": "30 mins"
-}
+    const prompt = `Generate a YOLO challenge. ${config.instruction}.
 
-category: SOCIAL, PHYSICAL, MENTAL, or CHAOS
-difficulty: 1-100`;
+Mood: ${mood}
+
+Output ONLY valid JSON, exactly like this example:
+{"title":"${config.example.title}","description":"${config.example.description}","difficulty":45,"category":"SOCIAL","estimatedTime":"15 mins"}
+
+Requirements:
+- title: catchy, 2-6 words
+- description: specific action, 1-2 sentences  
+- difficulty: 1-100 (how scary/hard)
+- category: SOCIAL, PHYSICAL, MENTAL, or CHAOS
+- estimatedTime: like "5 mins", "30 mins", "1 hour"
+
+Be creative! Make it fun, slightly uncomfortable but safe and legal.`;
 
     const text = await callGemini(prompt);
-    if (text) {
-      res.json(JSON.parse(text));
-    } else {
-      throw new Error("No response");
+    if (!text) throw new Error("Empty response");
+    
+    // 清理响应文本
+    let jsonStr = text.trim();
+    if (jsonStr.startsWith('```')) {
+      jsonStr = jsonStr.replace(/^```(?:json)?\n?/, '').replace(/\n?```$/, '');
     }
+    const jsonMatch = jsonStr.match(/\{[\s\S]*?\}/);
+    if (!jsonMatch) throw new Error("No JSON found");
+    
+    const parsed = JSON.parse(jsonMatch[0]);
+    
+    // 严格验证必要字段
+    if (!parsed.title || !parsed.description) {
+      throw new Error("Missing title or description");
+    }
+    
+    res.json({
+      title: String(parsed.title),
+      description: String(parsed.description),
+      difficulty: Math.min(100, Math.max(1, Number(parsed.difficulty) || 50)),
+      category: ['SOCIAL', 'PHYSICAL', 'MENTAL', 'CHAOS'].includes(parsed.category) ? parsed.category : 'CHAOS',
+      estimatedTime: String(parsed.estimatedTime || parsed.estimated_time || '30 mins')
+    });
   } catch (error) {
     console.error("Gemini API Error:", error);
     const lang = req.body?.language || 'en';

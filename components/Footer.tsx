@@ -133,7 +133,7 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
             </button>
 
             <h3 className="text-2xl font-black text-yolo-white mb-2 uppercase">{t.footer.shareModal.title}</h3>
-            <p className="text-yolo-gray text-sm font-mono mb-6">{t.footer.shareModal.desc}</p>
+            <p className="text-white/70 text-sm font-mono mb-6">{t.footer.shareModal.desc}</p>
 
             <div className="space-y-6">
                 {/* Copy Link Section */}

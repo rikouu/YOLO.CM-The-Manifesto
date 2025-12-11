@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { generateYoloChallenge } from '../services/geminiService';
 import { Challenge } from '../types';
-import { RefreshCw, Zap, Clock, Skull, Download, Trophy, ArrowRight, Binary, X, Camera, Upload, Check } from 'lucide-react';
+import { RefreshCw, Zap, Clock, Skull, Download, Trophy, ArrowRight, Binary, X, Camera, Upload, Check, Moon, Compass, Sofa, Flame, UtensilsCrossed, Users, Palette, Heart, Dumbbell, Shuffle } from 'lucide-react';
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { soundManager } from '../services/soundService';
 import { acceptChallenge, getActiveChallenge, completeChallenge, Challenge as DBChallenge } from '../services/authService';
 import { useToast } from './Toast';
+import AuthModal from './AuthModal';
 
 const DareGenerator: React.FC = () => {
   const [loading, setLoading] = useState(false);
@@ -21,6 +22,7 @@ const DareGenerator: React.FC = () => {
   const [selectedPhoto, setSelectedPhoto] = useState<File | null>(null);
   const [photoPreview, setPhotoPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -34,7 +36,18 @@ const DareGenerator: React.FC = () => {
     }
   }, [user]);
 
-  const moods = ["Bored", "Adventurous", "Lazy", "Chaos", "Hungry"];
+  const moods = [
+    { key: "Bored", Icon: Moon },
+    { key: "Adventurous", Icon: Compass },
+    { key: "Lazy", Icon: Sofa },
+    { key: "Chaos", Icon: Flame },
+    { key: "Hungry", Icon: UtensilsCrossed },
+    { key: "Social", Icon: Users },
+    { key: "Creative", Icon: Palette },
+    { key: "Romantic", Icon: Heart },
+    { key: "Fitness", Icon: Dumbbell },
+    { key: "Random", Icon: Shuffle }
+  ];
   
   const loadingMessages = [
     "INITIALIZING NEURAL HANDSHAKE...",
@@ -566,15 +579,16 @@ const DareGenerator: React.FC = () => {
       </div>
 
       {!challenge && !loading && !completed && !activeChallenge && (
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 w-full">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3 w-full">
           {moods.map((m) => (
             <button
-              key={m}
-              onClick={() => handleGenerate(m)}
+              key={m.key}
+              onClick={() => handleGenerate(m.key)}
               onMouseEnter={() => soundManager.playHover()}
-              className="h-24 md:h-32 border border-yolo-gray hover:border-yolo-lime hover:bg-yolo-lime/10 text-yolo-white hover:text-yolo-lime transition-all duration-200 font-mono text-xl uppercase tracking-widest flex items-center justify-center group"
+              className="h-20 md:h-24 border border-yolo-gray hover:border-yolo-lime hover:bg-yolo-lime/10 text-yolo-white hover:text-yolo-lime transition-all duration-200 font-mono text-sm uppercase tracking-wider flex flex-col items-center justify-center gap-2 group"
             >
-              <span className="group-hover:scale-110 transition-transform">{getMoodLabel(m)}</span>
+              <m.Icon className="w-6 h-6 group-hover:scale-125 transition-transform" />
+              <span className="group-hover:scale-105 transition-transform text-xs">{getMoodLabel(m.key)}</span>
             </button>
           ))}
         </div>
@@ -754,11 +768,12 @@ const DareGenerator: React.FC = () => {
                   </button>
                 ) : (
                   <button 
-                    onClick={handleComplete}
+                    onClick={() => setShowAuthModal(true)}
                     onMouseEnter={() => soundManager.playHover()}
-                    className="flex-1 bg-yolo-white text-yolo-black py-4 font-bold uppercase hover:bg-yolo-lime hover:text-black transition-all border-2 border-transparent hover:border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)]"
+                    className="flex-1 bg-yolo-lime text-black py-4 font-bold uppercase hover:bg-yolo-pink hover:text-white transition-all border-2 border-transparent hover:border-black hover:shadow-[4px_4px_0px_0px_rgba(0,0,0,1)] flex items-center justify-center gap-2"
                   >
-                    {t.dare.successBtn}
+                    <Zap className="w-5 h-5" />
+                    JUST DO IT
                   </button>
                 )}
                 
@@ -786,6 +801,9 @@ const DareGenerator: React.FC = () => {
           </div>
         </div>
       )}
+
+      {/* Auth Modal for non-logged users */}
+      <AuthModal isOpen={showAuthModal} onClose={() => setShowAuthModal(false)} />
     </div>
   );
 };

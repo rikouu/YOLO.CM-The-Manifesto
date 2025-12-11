@@ -36,7 +36,12 @@ export const translations = {
         Adventurous: "Adventurous",
         Lazy: "Lazy",
         Chaos: "Chaos",
-        Hungry: "Hungry"
+        Hungry: "Hungry",
+        Social: "Social",
+        Creative: "Creative",
+        Romantic: "Romantic",
+        Fitness: "Fitness",
+        Random: "Random"
       }
     },
     stats: {
@@ -157,7 +162,12 @@ export const translations = {
         Adventurous: "冒险",
         Lazy: "懒惰",
         Chaos: "混乱",
-        Hungry: "饥饿"
+        Hungry: "饥饿",
+        Social: "社交",
+        Creative: "创意",
+        Romantic: "浪漫",
+        Fitness: "健身",
+        Random: "随机"
       }
     },
     stats: {
@@ -278,7 +288,12 @@ export const translations = {
         Adventurous: "冒険",
         Lazy: "怠惰",
         Chaos: "混沌",
-        Hungry: "空腹"
+        Hungry: "空腹",
+        Social: "社交",
+        Creative: "創造",
+        Romantic: "ロマンチック",
+        Fitness: "フィットネス",
+        Random: "ランダム"
       }
     },
     stats: {
