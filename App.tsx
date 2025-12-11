@@ -11,7 +11,7 @@ import Profile from './components/Profile';
 import ChallengeWall from './components/ChallengeWall';
 import AuthModal from './components/AuthModal';
 import { AppMode, Language } from './types';
-import { Terminal, Activity, Zap, Globe, FileText, CircleDollarSign, ShoppingBag, ArrowRight, User, Trophy, Menu, X } from 'lucide-react';
+import { Terminal, Activity, Zap, FileText, CircleDollarSign, ShoppingBag, ArrowRight, User, Trophy, Menu, X } from 'lucide-react';
 import { LanguageProvider, useLanguage } from './contexts/LanguageContext';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { ToastProvider } from './components/Toast';
@@ -142,11 +142,11 @@ const AppContent: React.FC = () => {
               <div ref={langMenuRef} className="relative ml-1">
                 <button
                   onClick={() => { soundManager.playClick(); setLangMenuOpen(!langMenuOpen); }}
-                  className={`p-2 rounded-full border transition-all
+                  className={`w-8 h-8 rounded-full border transition-all font-mono text-xs font-bold flex items-center justify-center
                     ${langMenuOpen ? 'border-yolo-lime text-yolo-lime' : 'text-white/60 border-transparent hover:text-white hover:border-yolo-gray'}`}
                   title={language.toUpperCase()}
                 >
-                  <Globe className="w-4 h-4" />
+                  {language.toUpperCase()}
                 </button>
                 {langMenuOpen && (
                   <div className="absolute top-full right-0 mt-1 bg-black border border-yolo-gray shadow-lg z-50 min-w-[60px]">

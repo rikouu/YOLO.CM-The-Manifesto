@@ -159,19 +159,10 @@ app.post('/api/generate-challenge', async (req, res) => {
     if (!mood) return res.status(400).json({ error: 'mood is required' });
 
     // 根据语言构建示例
-    const langConfig: Record<string, { instruction: string; example: { title: string; description: string } }> = {
-      zh: {
-        instruction: '请用中文回复，标题和描述都必须是中文',
-        example: { title: '公开表白墙', description: '在社交媒体上公开发一条动态，真诚地夸赞一个你暗中欣赏但从未表达过的人' }
-      },
-      ja: {
-        instruction: '日本語で回答してください。タイトルと説明は日本語で書いてください',
-        example: { title: '逆ナンパ挑戦', description: '街で気になる人に声をかけて、おすすめのカフェを聞いてみよう。断られても笑顔で「ありがとう」と言う' }
-      },
-      en: {
-        instruction: 'Reply in English. Title and description must be in English',
-        example: { title: 'Cold Approach Challenge', description: 'Walk up to someone attractive at a cafe and ask for their music recommendation. If rejected, smile and say thanks anyway.' }
-      }
+    const langConfig: Record<string, { instruction: string }> = {
+      zh: { instruction: '请用中文回复，标题和描述都必须是中文' },
+      ja: { instruction: '日本語で回答してください。タイトルと説明は日本語で書いてください' },
+      en: { instruction: 'Reply in English. Title and description must be in English' }
     };
 
     const config = langConfig[language] || langConfig.en;
@@ -185,52 +176,49 @@ app.post('/api/generate-challenge', async (req, res) => {
       ? `Social: ${socialLevel === 'solo' ? 'SOLO (no people interaction)' : socialLevel === 'one-on-one' ? 'ONE-ON-ONE interaction' : socialLevel === 'strangers' ? 'with STRANGERS' : 'GROUP activity (3+ people)'}.`
       : '';
 
-    const prompt = `You are a YOLO challenge generator. Your job is to create challenges that make people feel ALIVE.
-${config.instruction}。
+    const prompt = `You are a YOLO challenge generator. Create a UNIQUE challenge that makes people feel ALIVE.
+${config.instruction}
 
-The YOLO philosophy: "You Only Live Once" — life is too short for regrets. We help people break out of their comfort zones and create unforgettable memories.
+IMPORTANT: Generate a COMPLETELY NEW and CREATIVE challenge. DO NOT copy examples. Each response must be DIFFERENT.
 
-User's current vibe: "${mood}"
+User's mood: "${mood}"
 ${envConstraint ? envConstraint : ''}
 ${socialConstraint ? socialConstraint : ''}
 
-CHALLENGE DESIGN PRINCIPLES:
-1. Make it MEMORABLE — something they'll tell stories about
-2. Make it UNCOMFORTABLE but not dangerous — the best growth happens at the edge of comfort
-3. Make it SPECIFIC — exact actions, not vague advice
-4. Make it ACHIEVABLE — can be done today, no special equipment needed
-5. Make it BOLD — we're not here for "drink more water" level challenges
+YOLO PHILOSOPHY: Life is too short for regrets. Push comfort zones. Create unforgettable memories.
 
-GOOD challenges feel like:
-- Asking someone out who's "out of your league"
-- Dancing in public when no one else is
-- Sending that risky text you've been drafting for weeks
-- Starting a conversation with the most intimidating person in the room
-- Doing something embarrassing on purpose and owning it
+GOOD challenges:
+- Ask someone "out of your league" for their number
+- Sing loudly in a public place for 30 seconds
+- Send that risky text you've been drafting
+- Talk to the most intimidating person in the room
+- Do something embarrassing on purpose and own it
+- Give a genuine compliment to 5 strangers
+- Video call someone you haven't talked to in years
 
-BAD challenges are:
-- Generic self-care (meditate, journal, go for a walk)
-- Anything illegal or actually dangerous
-- Harassment or making others uncomfortable against their will
-- Vague motivational fluff ("be confident today")
+BAD challenges (NEVER suggest these):
+- Generic self-care (meditate, journal, walk)
+- Illegal or dangerous activities
+- Harassment or making others uncomfortable
+- Vague advice ("be confident")
 
-The challenge should make them think "oh shit, can I really do this?" but then realize "...actually, why not?"
+The challenge should make them think "oh shit, can I really do this?" then "...why not?"
 
-Think of 3 wild ideas, then pick the one that's most fun AND actually doable.
+Generate 3 ideas mentally, pick the most FUN and DOABLE one.
 
-Output ONLY this JSON:
-{"title":"${config.example.title}","description":"${config.example.description}","difficulty":65,"category":"SOCIAL","estimatedTime":"15 mins","environment":"outdoor","socialLevel":"strangers"}
+Return ONLY valid JSON (no markdown, no explanation):
+{"title":"YOUR_UNIQUE_TITLE","description":"YOUR_SPECIFIC_DESCRIPTION","difficulty":NUMBER,"category":"CATEGORY","estimatedTime":"TIME","environment":"ENV","socialLevel":"LEVEL"}
 
-Fields:
-- title: 2-6 words, punchy, makes you curious
-- description: 1-2 sentences, EXACTLY what to do (where, what, how many/long)
-- difficulty: 30-90 (we don't do easy mode here)
-- category: SOCIAL (people), PHYSICAL (body), MENTAL (mind), CHAOS (random fun)
+Rules:
+- title: 2-6 words, catchy, in ${language === 'zh' ? 'Chinese' : language === 'ja' ? 'Japanese' : 'English'}
+- description: 1-2 sentences, specific action with context
+- difficulty: 30-90 (no easy mode)
+- category: SOCIAL/PHYSICAL/MENTAL/CHAOS
 - estimatedTime: "5 mins" to "2 hours"
 - environment: indoor/outdoor/online
 - socialLevel: solo/one-on-one/strangers/group
 
-JSON only. No markdown. No explanation.`;
+BE CREATIVE! SURPRISE ME!`;
 
     const text = await callGemini(prompt);
     if (!text) throw new Error("Empty response");
