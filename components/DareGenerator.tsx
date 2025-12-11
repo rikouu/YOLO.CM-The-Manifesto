@@ -242,10 +242,10 @@ const DareGenerator: React.FC = () => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    // 1:1 正方形尺寸，适合社交媒体分享
+    // 3:4 比例，适合手机展示的任务卡
     const width = 1080;
-    const height = 1080;
-    const padding = 50;
+    const height = 1520;
+    const padding = 60;
     
     canvas.width = width;
     canvas.height = height;
@@ -279,13 +279,13 @@ const DareGenerator: React.FC = () => {
     // ========== 顶部 LOGO ==========
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '900 48px Arial, sans-serif';
+    ctx.font = '900 64px Arial, sans-serif';
     ctx.fillStyle = colors.white;
-    ctx.fillText('YOLO.CM', width / 2, 50);
+    ctx.fillText('YOLO.CM', width / 2, 70);
 
     // ========== 挑战卡片区域 ==========
-    const cardY = 90;
-    const cardHeight = 580;
+    const cardY = 130;
+    const cardHeight = 750;
     
     // 卡片背景
     ctx.fillStyle = colors.cardBg;
@@ -293,7 +293,7 @@ const DareGenerator: React.FC = () => {
     
     // 卡片边框
     ctx.strokeStyle = colors.white;
-    ctx.lineWidth = 4;
+    ctx.lineWidth = 5;
     ctx.strokeRect(padding, cardY, contentWidth, cardHeight);
 
     // 斜线纹理（卡片内）
@@ -314,91 +314,91 @@ const DareGenerator: React.FC = () => {
     // 分类标签（粉色背景）
     ctx.fillStyle = colors.pink;
     const labelText = challenge.category;
-    ctx.font = 'bold 28px Arial, sans-serif';
-    const labelWidth = ctx.measureText(labelText).width + 40;
-    ctx.fillRect(padding - 2, cardY - 2, labelWidth, 45);
+    ctx.font = 'bold 32px Arial, sans-serif';
+    const labelWidth = ctx.measureText(labelText).width + 50;
+    ctx.fillRect(padding - 2, cardY - 2, labelWidth, 55);
     ctx.fillStyle = '#000';
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(labelText, padding + 15, cardY + 20);
+    ctx.fillText(labelText, padding + 20, cardY + 25);
 
     // 右上角装饰星
     ctx.fillStyle = colors.lime;
-    ctx.font = '36px Arial';
+    ctx.font = '48px Arial';
     ctx.textAlign = 'right';
-    ctx.fillText('✦', width - padding - 15, cardY + 45);
+    ctx.fillText('✦', width - padding - 20, cardY + 55);
 
     // 挑战标题（自适应大小）
     ctx.textAlign = 'left';
-    const titleFontSize = fitText(ctx, challenge.title, contentWidth - 60, 56, 32);
+    const titleFontSize = fitText(ctx, challenge.title, contentWidth - 80, 64, 36);
     ctx.font = `900 ${titleFontSize}px Arial, sans-serif`;
     ctx.fillStyle = colors.white;
     ctx.textBaseline = 'top';
-    const titleStartY = cardY + 70;
-    const titleEndY = wrapText(ctx, challenge.title, padding + 30, titleStartY, contentWidth - 60, titleFontSize + 12);
+    const titleStartY = cardY + 90;
+    const titleEndY = wrapText(ctx, challenge.title, padding + 40, titleStartY, contentWidth - 80, titleFontSize + 16);
 
     // 左侧绿色竖线
-    const descStartY = titleEndY + 15;
+    const descStartY = titleEndY + 30;
     ctx.fillStyle = colors.lime;
-    ctx.fillRect(padding + 30, descStartY, 5, 100);
+    ctx.fillRect(padding + 40, descStartY, 6, 140);
 
     // 挑战描述（自适应大小）
-    const descFontSize = challenge.description.length > 80 ? 28 : 32;
+    const descFontSize = challenge.description.length > 80 ? 32 : 38;
     ctx.font = `400 ${descFontSize}px Arial, sans-serif`;
     ctx.fillStyle = 'rgba(255, 255, 255, 0.85)';
-    wrapText(ctx, challenge.description, padding + 55, descStartY + 5, contentWidth - 100, descFontSize + 14);
+    wrapText(ctx, challenge.description, padding + 70, descStartY + 10, contentWidth - 130, descFontSize + 18);
 
     // 统计信息
-    const statsStartY = cardY + cardHeight - 70;
-    ctx.font = '26px Arial, sans-serif';
+    const statsStartY = cardY + cardHeight - 90;
+    ctx.font = '30px Arial, sans-serif';
     ctx.fillStyle = colors.lime;
     ctx.textAlign = 'left';
     ctx.textBaseline = 'middle';
-    ctx.fillText(`⏱ ${challenge.estimatedTime}`, padding + 30, statsStartY);
+    ctx.fillText(`⏱ ${challenge.estimatedTime}`, padding + 40, statsStartY);
     ctx.fillStyle = colors.pink;
-    ctx.fillText(`☠ ${t.dare.difficulty}: ${challenge.difficulty}/100`, padding + 280, statsStartY);
+    ctx.fillText(`☠ ${t.dare.difficulty}: ${challenge.difficulty}/100`, padding + 320, statsStartY);
 
     // 底部荧光绿线
     ctx.fillStyle = colors.lime;
-    ctx.fillRect(padding, cardY + cardHeight - 6, contentWidth, 6);
+    ctx.fillRect(padding, cardY + cardHeight - 8, contentWidth, 8);
 
     // ========== 底部标语区域 ==========
-    const sloganY = cardY + cardHeight + 25;
+    const sloganY = cardY + cardHeight + 40;
     const sloganHeight = height - sloganY - padding;
 
     // 标语背景
     ctx.fillStyle = colors.darkGray;
     ctx.fillRect(padding, sloganY, contentWidth, sloganHeight);
     ctx.strokeStyle = colors.gray;
-    ctx.lineWidth = 3;
+    ctx.lineWidth = 4;
     ctx.strokeRect(padding, sloganY, contentWidth, sloganHeight);
 
-    // 左侧：标语
-    const sloganLeftWidth = contentWidth * 0.65;
-    
-    // THE ONLY RULE:
-    ctx.textAlign = 'left';
+    // THE ONLY RULE: (居中)
+    ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.font = '18px Arial, sans-serif';
+    ctx.font = '22px Arial, sans-serif';
     ctx.fillStyle = '#666';
-    ctx.fillText('THE ONLY RULE:', padding + 30, sloganY + 40);
+    ctx.fillText('THE ONLY RULE:', width / 2, sloganY + 50);
 
-    // DIE WITH MEMORIES,
-    ctx.font = '900 42px Arial, sans-serif';
+    // DIE WITH MEMORIES, (居中)
+    ctx.font = '900 56px Arial, sans-serif';
     ctx.fillStyle = colors.white;
-    ctx.fillText('DIE WITH', padding + 30, sloganY + 100);
+    ctx.fillText('DIE WITH ', width / 2 - 120, sloganY + 120);
     ctx.fillStyle = colors.lime;
-    ctx.fillText('MEMORIES,', padding + 260, sloganY + 100);
+    ctx.textAlign = 'left';
+    ctx.fillText('MEMORIES,', width / 2 + 60, sloganY + 120);
 
-    // NOT DREAMS.
+    // NOT DREAMS. (居中)
+    ctx.textAlign = 'center';
     ctx.fillStyle = colors.white;
-    ctx.fillText('NOT', padding + 30, sloganY + 160);
+    ctx.fillText('NOT ', width / 2 - 80, sloganY + 190);
     ctx.fillStyle = colors.pink;
-    ctx.fillText('DREAMS.', padding + 130, sloganY + 160);
+    ctx.textAlign = 'left';
+    ctx.fillText('DREAMS.', width / 2, sloganY + 190);
 
-    // 右侧：二维码
+    // 二维码 (居中)
     try {
-      const qrSize = 120;
+      const qrSize = 150;
       const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=${qrSize}x${qrSize}&data=https://yolo.cm&color=ccff00&bgcolor=1a1a1a&margin=0`;
       
       const qrImg = new Image();
@@ -410,28 +410,33 @@ const DareGenerator: React.FC = () => {
         qrImg.src = qrUrl;
       });
 
-      const qrX = width - padding - qrSize - 40;
-      const qrY = sloganY + 35;
+      const qrX = width / 2 - qrSize / 2;
+      const qrY = sloganY + 240;
 
       // 二维码边框
       ctx.strokeStyle = colors.lime;
-      ctx.lineWidth = 3;
-      ctx.strokeRect(qrX - 8, qrY - 8, qrSize + 16, qrSize + 16);
+      ctx.lineWidth = 4;
+      ctx.strokeRect(qrX - 10, qrY - 10, qrSize + 20, qrSize + 20);
       
       ctx.drawImage(qrImg, qrX, qrY, qrSize, qrSize);
 
-      // SCAN 标注
+      // 邀请文字（多语言）
+      const inviteText = language === 'zh' 
+        ? '邀请你一起YOLO' 
+        : language === 'ja' 
+          ? 'YOLOチャレンジに招待' 
+          : 'Join the YOLO challenge';
       ctx.textAlign = 'center';
-      ctx.font = 'bold 16px Arial, sans-serif';
-      ctx.fillStyle = '#666';
-      ctx.fillText('SCAN ME', qrX + qrSize / 2, qrY + qrSize + 30);
+      ctx.font = 'bold 24px Arial, sans-serif';
+      ctx.fillStyle = colors.lime;
+      ctx.fillText(inviteText, width / 2, qrY + qrSize + 45);
     } catch (err) {
       console.error("QR Error", err);
     }
 
     // ========== 底部装饰线 ==========
     ctx.fillStyle = colors.pink;
-    ctx.fillRect(padding, height - padding - 6, contentWidth, 6);
+    ctx.fillRect(padding, height - padding - 8, contentWidth, 8);
 
     // 生成图片并显示弹窗
     const imageUrl = canvas.toDataURL('image/png');
@@ -458,41 +463,41 @@ const DareGenerator: React.FC = () => {
   return (
     <div className="w-full max-w-4xl mx-auto px-4 py-4 md:p-8 flex flex-col items-center">
       
-      {/* 图片预览弹窗 - 显示真正的 canvas 生成图片 */}
+      {/* 图片预览弹窗 - 3:4 比例图片，缩放适应屏幕 */}
       {previewImage && (
         <div 
-          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-4 overflow-y-auto"
+          className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center p-2 md:p-4"
           onClick={closePreview}
         >
           <div 
-            className="relative w-full max-w-sm animate-in zoom-in duration-200 my-4"
+            className="relative w-full max-w-[280px] md:max-w-[360px] animate-in zoom-in duration-200"
             onClick={(e: React.MouseEvent) => e.stopPropagation()}
           >
             {/* 关闭按钮 */}
             <button 
               onClick={closePreview}
-              className="absolute -top-2 -right-2 w-10 h-10 bg-yolo-pink text-black flex items-center justify-center hover:bg-white transition-colors z-20 shadow-lg rounded-full"
+              className="absolute -top-2 -right-2 w-8 h-8 md:w-10 md:h-10 bg-yolo-pink text-black flex items-center justify-center hover:bg-white transition-colors z-20 shadow-lg rounded-full"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
-            {/* 生成的图片 - 可长按保存 */}
+            {/* 生成的图片 - 3:4 比例，缩放显示 */}
             <img 
               src={previewImage} 
               alt="YOLO Challenge Card" 
-              className="w-full h-auto border-2 border-yolo-lime shadow-[0_0_30px_rgba(204,255,0,0.3)]"
+              className="w-full h-auto border-2 border-yolo-lime shadow-[0_0_30px_rgba(204,255,0,0.3)] rounded-sm"
             />
 
             {/* 底部操作区 */}
-            <div className="mt-4 space-y-3">
-              <p className="text-yolo-gray text-xs text-center font-mono">
+            <div className="mt-3 space-y-2">
+              <p className="text-yolo-gray text-[10px] md:text-xs text-center font-mono">
                 {language === 'zh' ? '长按图片保存到相册' : 
                  language === 'ja' ? '長押しで画像を保存' :
                  'Long press image to save'}
               </p>
               <button
                 onClick={downloadImage}
-                className="w-full py-3 bg-yolo-lime text-black font-bold uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2 text-sm"
+                className="w-full py-2.5 md:py-3 bg-yolo-lime text-black font-bold uppercase tracking-wider hover:bg-white transition-colors flex items-center justify-center gap-2 text-xs md:text-sm"
               >
                 <Download className="w-4 h-4" />
                 {language === 'zh' ? '下载图片' : language === 'ja' ? 'ダウンロード' : 'Download'}
