@@ -73,42 +73,42 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
 
   return (
     <>
-      <footer className="w-full border-t border-yolo-gray bg-yolo-black py-12 px-6 flex flex-col md:flex-row items-center justify-between z-10 relative">
-        <div className="flex flex-col mb-8 md:mb-0 text-center md:text-left">
-          <span 
-            className="font-black text-3xl text-yolo-white cursor-pointer hover:text-yolo-lime transition-colors tracking-tighter"
+      <footer className="w-full border-t border-yolo-gray bg-yolo-black py-8 md:py-12 px-4 md:px-6 flex flex-col md:flex-row items-center justify-between z-10 relative mt-auto">
+        <div className="flex flex-col mb-6 md:mb-0 text-center md:text-left">
+          <span
+            className="font-black text-2xl md:text-3xl text-yolo-white cursor-pointer hover:text-yolo-lime transition-colors tracking-tighter"
             onClick={() => handleNavClick(AppMode.HOME)}
           >
             YOLO.CM
           </span>
-          <span className="text-yolo-gray text-xs font-mono mt-2 tracking-widest">© {new Date().getFullYear()} THE VOID INC.</span>
+          <span className="text-yolo-gray text-[10px] md:text-xs font-mono mt-2 tracking-widest">© {new Date().getFullYear()} THE VOID INC.</span>
         </div>
 
-        <div className="flex flex-col md:flex-row items-center gap-6 md:gap-12 w-full md:w-auto">
+        <div className="flex flex-row flex-wrap items-center justify-center gap-4 md:gap-12 w-full md:w-auto">
             {/* Minimalist Button Group */}
             
-            <button 
-                onClick={() => handleNavClick(AppMode.MANIFESTO)} 
+            <button
+                onClick={() => handleNavClick(AppMode.MANIFESTO)}
                 onMouseEnter={() => soundManager.playHover()}
-                className="text-yolo-white hover:text-yolo-lime active:scale-95 transition-all duration-150 font-black font-mono text-sm uppercase tracking-widest relative group"
+                className="text-yolo-white hover:text-yolo-lime active:scale-95 transition-all duration-150 font-black font-mono text-xs md:text-sm uppercase tracking-widest relative group"
             >
                 {t.footer.manifesto}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-yolo-lime transition-all group-hover:w-full"></span>
             </button>
-            
-            <button 
-                onClick={() => handleNavClick(AppMode.MERCH)} 
+
+            <button
+                onClick={() => handleNavClick(AppMode.MERCH)}
                 onMouseEnter={() => soundManager.playHover()}
-                className="text-yolo-white hover:text-yolo-lime active:scale-95 transition-all duration-150 font-black font-mono text-sm uppercase tracking-widest relative group"
+                className="text-yolo-white hover:text-yolo-lime active:scale-95 transition-all duration-150 font-black font-mono text-xs md:text-sm uppercase tracking-widest relative group"
             >
                 {t.footer.merch}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-yolo-lime transition-all group-hover:w-full"></span>
             </button>
 
-            <button 
+            <button
                 onClick={handleShareClick}
                 onMouseEnter={() => soundManager.playHover()}
-                className="text-yolo-lime hover:text-yolo-pink active:scale-95 transition-all duration-150 font-black font-mono text-sm uppercase tracking-widest relative group flex items-center gap-2"
+                className="text-yolo-lime hover:text-yolo-pink active:scale-95 transition-all duration-150 font-black font-mono text-xs md:text-sm uppercase tracking-widest relative group flex items-center gap-2"
             >
                 {t.footer.share}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-yolo-pink transition-all group-hover:w-full"></span>
@@ -117,33 +117,33 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
         </div>
       </footer>
 
-      {/* Share Modal */}
+      {/* Share Modal - 优化移动端适配 */}
       {shareOpenState && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200" 
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-3 md:p-4">
+          <div
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
             onClick={handleClose}
           ></div>
-          <div className="relative bg-yolo-black border border-yolo-lime p-8 max-w-md w-full shadow-[0_0_50px_rgba(204,255,0,0.2)] animate-in zoom-in-95 duration-200">
-            <button 
+          <div className="relative bg-yolo-black border border-yolo-lime p-5 md:p-8 max-w-[95vw] md:max-w-md w-full shadow-[0_0_50px_rgba(204,255,0,0.2)] animate-in zoom-in-95 duration-200">
+            <button
                 onClick={handleClose}
-                className="absolute top-4 right-4 text-yolo-gray hover:text-yolo-lime transition-colors"
+                className="absolute top-3 right-3 md:top-4 md:right-4 text-yolo-gray hover:text-yolo-lime transition-colors"
             >
-                <X className="w-6 h-6" />
+                <X className="w-5 h-5 md:w-6 md:h-6" />
             </button>
 
-            <h3 className="text-2xl font-black text-yolo-white mb-2 uppercase">{t.footer.shareModal.title}</h3>
-            <p className="text-white/70 text-sm font-mono mb-6">{t.footer.shareModal.desc}</p>
+            <h3 className="text-xl md:text-2xl font-black text-yolo-white mb-2 uppercase">{t.footer.shareModal.title}</h3>
+            <p className="text-white/70 text-xs md:text-sm font-mono mb-4 md:mb-6">{t.footer.shareModal.desc}</p>
 
-            <div className="space-y-6">
+            <div className="space-y-4 md:space-y-6">
                 {/* Copy Link Section */}
                 <div className="flex flex-col sm:flex-row gap-2">
-                    <div className="flex-1 bg-yolo-gray/20 border border-yolo-gray px-4 py-3 text-yolo-white font-mono text-sm truncate rounded-none select-all">
+                    <div className="flex-1 bg-yolo-gray/20 border border-yolo-gray px-3 md:px-4 py-2.5 md:py-3 text-yolo-white font-mono text-xs md:text-sm truncate rounded-none select-all">
                         {url}
                     </div>
-                    <button 
+                    <button
                         onClick={handleCopy}
-                        className={`px-4 py-3 font-bold transition-all duration-300 flex items-center justify-center min-w-[100px] font-mono ${
+                        className={`px-4 py-2.5 md:py-3 font-bold transition-all duration-300 flex items-center justify-center min-w-[90px] md:min-w-[100px] font-mono text-sm ${
                             copied ? 'bg-yolo-pink text-white' : 'bg-yolo-lime text-black hover:bg-white'
                         }`}
                     >
@@ -160,27 +160,27 @@ const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
                 </div>
 
                 {/* Social Buttons */}
-                <div className="grid grid-cols-3 gap-3">
-                    <button 
-                        onClick={() => socialShare('twitter')} 
-                        className="flex flex-col items-center justify-center p-4 border border-yolo-gray hover:border-yolo-white hover:bg-white/5 transition-all group"
+                <div className="grid grid-cols-3 gap-2 md:gap-3">
+                    <button
+                        onClick={() => socialShare('twitter')}
+                        className="flex flex-col items-center justify-center p-3 md:p-4 border border-yolo-gray hover:border-yolo-white hover:bg-white/5 transition-all group"
                     >
-                        <Twitter className="w-6 h-6 mb-2 text-yolo-gray group-hover:text-yolo-lime transition-colors" />
-                        <span className="text-xs font-mono text-yolo-gray group-hover:text-yolo-white">X / Twitter</span>
+                        <Twitter className="w-5 h-5 md:w-6 md:h-6 mb-1.5 md:mb-2 text-yolo-gray group-hover:text-yolo-lime transition-colors" />
+                        <span className="text-[10px] md:text-xs font-mono text-yolo-gray group-hover:text-yolo-white">X / Twitter</span>
                     </button>
-                    <button 
-                        onClick={() => socialShare('facebook')} 
-                        className="flex flex-col items-center justify-center p-4 border border-yolo-gray hover:border-yolo-white hover:bg-white/5 transition-all group"
+                    <button
+                        onClick={() => socialShare('facebook')}
+                        className="flex flex-col items-center justify-center p-3 md:p-4 border border-yolo-gray hover:border-yolo-white hover:bg-white/5 transition-all group"
                     >
-                        <Facebook className="w-6 h-6 mb-2 text-yolo-gray group-hover:text-[#1877F2] transition-colors" />
-                        <span className="text-xs font-mono text-yolo-gray group-hover:text-yolo-white">Facebook</span>
+                        <Facebook className="w-5 h-5 md:w-6 md:h-6 mb-1.5 md:mb-2 text-yolo-gray group-hover:text-[#1877F2] transition-colors" />
+                        <span className="text-[10px] md:text-xs font-mono text-yolo-gray group-hover:text-yolo-white">Facebook</span>
                     </button>
-                    <button 
-                        onClick={() => socialShare('linkedin')} 
-                        className="flex flex-col items-center justify-center p-4 border border-yolo-gray hover:border-yolo-white hover:bg-white/5 transition-all group"
+                    <button
+                        onClick={() => socialShare('linkedin')}
+                        className="flex flex-col items-center justify-center p-3 md:p-4 border border-yolo-gray hover:border-yolo-white hover:bg-white/5 transition-all group"
                     >
-                        <Linkedin className="w-6 h-6 mb-2 text-yolo-gray group-hover:text-[#0A66C2] transition-colors" />
-                        <span className="text-xs font-mono text-yolo-gray group-hover:text-yolo-white">LinkedIn</span>
+                        <Linkedin className="w-5 h-5 md:w-6 md:h-6 mb-1.5 md:mb-2 text-yolo-gray group-hover:text-[#0A66C2] transition-colors" />
+                        <span className="text-[10px] md:text-xs font-mono text-yolo-gray group-hover:text-yolo-white">LinkedIn</span>
                     </button>
                 </div>
             </div>

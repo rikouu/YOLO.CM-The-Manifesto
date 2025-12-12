@@ -129,7 +129,7 @@ const YoloCoin: React.FC = () => {
   const isSpinning = speed > 0;
 
   return (
-    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center px-4 md:px-6 pt-16 md:pt-20 pb-6 relative overflow-hidden select-none">
+    <div className="min-h-[100dvh] bg-black flex flex-col items-center justify-center px-3 sm:px-4 md:px-6 pt-16 md:pt-20 pb-6 relative overflow-hidden select-none">
       {/* 背景 */}
       <div className="absolute inset-0 pointer-events-none">
         <div 
@@ -163,18 +163,18 @@ const YoloCoin: React.FC = () => {
       </div>
 
       {/* 标题 */}
-      <div className="relative z-10 mb-6 text-center">
-        <h1 className="text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-1">
+      <div className="relative z-10 mb-4 sm:mb-6 text-center">
+        <h1 className="text-3xl sm:text-4xl md:text-5xl font-black text-white uppercase tracking-tighter mb-1">
           {t.coin.title}
         </h1>
-        <p className="text-white/30 font-mono text-xs tracking-widest">
+        <p className="text-white/30 font-mono text-[10px] sm:text-xs tracking-widest">
           {showResult ? 'THE UNIVERSE HAS SPOKEN' : isHolding ? 'KEEP HOLDING!' : isDecelerating ? 'DECIDING...' : 'HOLD THE COIN'}
         </p>
       </div>
 
       {/* 硬币 */}
-      <div 
-        className={`relative z-10 mb-6 ${canInteract ? 'cursor-pointer' : ''}`}
+      <div
+        className={`relative z-10 mb-4 sm:mb-6 ${canInteract ? 'cursor-pointer' : ''}`}
         onMouseDown={canInteract ? handleHoldStart : undefined}
         onMouseUp={handleHoldEnd}
         onMouseLeave={handleHoldEnd}
@@ -189,9 +189,9 @@ const YoloCoin: React.FC = () => {
           style={{ transform: `rotate(${rotation * 0.5}deg)` }}
         />
 
-        {/* 主硬币 */}
-        <div 
-          className={`relative w-52 h-52 md:w-64 md:h-64 rounded-full transition-all duration-200 ${
+        {/* 主硬币 - 优化响应式尺寸 */}
+        <div
+          className={`relative w-44 h-44 sm:w-52 sm:h-52 md:w-64 md:h-64 rounded-full transition-all duration-200 ${
             !input.trim() ? 'opacity-30' : 'opacity-100'
           } ${isHolding ? 'scale-105' : ''}`}
           style={{ transform: `rotate(${rotation}deg)` }}
@@ -237,29 +237,29 @@ const YoloCoin: React.FC = () => {
             >
               {showResult ? (
                 <div className="animate-in zoom-in duration-300">
-                  <config.Icon 
-                    className="w-12 h-12 mx-auto mb-2" 
-                    style={{ color: config.color, filter: `drop-shadow(0 0 10px ${config.glow})` }} 
+                  <config.Icon
+                    className="w-10 h-10 sm:w-12 sm:h-12 mx-auto mb-1.5 sm:mb-2"
+                    style={{ color: config.color, filter: `drop-shadow(0 0 10px ${config.glow})` }}
                   />
-                  <div 
-                    className="text-2xl md:text-3xl font-black uppercase"
+                  <div
+                    className="text-xl sm:text-2xl md:text-3xl font-black uppercase"
                     style={{ color: config.color, textShadow: `0 0 20px ${config.glow}` }}
                   >
                     {t.coin.results[result!]}
                   </div>
-                  <Sparkles className="w-5 h-5 mx-auto mt-1" style={{ color: config.color }} />
+                  <Sparkles className="w-4 h-4 sm:w-5 sm:h-5 mx-auto mt-1" style={{ color: config.color }} />
                 </div>
               ) : (
                 <div>
-                  <span 
-                    className={`text-4xl md:text-5xl font-black transition-colors ${
+                  <span
+                    className={`text-3xl sm:text-4xl md:text-5xl font-black transition-colors ${
                       isHolding ? 'text-yolo-lime' : isSpinning ? 'text-cyan-400' : 'text-white/20'
                     }`}
                   >
                     {isSpinning ? '?' : 'YOLO'}
                   </span>
                   {canInteract && !isSpinning && (
-                    <p className="text-white/30 text-xs mt-2 font-mono animate-pulse">
+                    <p className="text-white/30 text-[10px] sm:text-xs mt-1.5 sm:mt-2 font-mono animate-pulse">
                       HOLD ME
                     </p>
                   )}
@@ -284,12 +284,12 @@ const YoloCoin: React.FC = () => {
 
       {/* 结果描述 */}
       {showResult && (
-        <div className="max-w-sm text-center mb-6 animate-in slide-in-from-bottom duration-500 z-10">
-          <div 
-            className="px-5 py-3 rounded-lg border-l-4"
+        <div className="max-w-xs sm:max-w-sm text-center mb-4 sm:mb-6 animate-in slide-in-from-bottom duration-500 z-10 px-2">
+          <div
+            className="px-4 sm:px-5 py-2.5 sm:py-3 rounded-lg border-l-4"
             style={{ borderColor: config.color, background: `linear-gradient(90deg, ${config.color}11, transparent)` }}
           >
-            <p className="font-mono text-base md:text-lg text-white/90 leading-relaxed">
+            <p className="font-mono text-sm sm:text-base md:text-lg text-white/90 leading-relaxed">
               {t.coin.descriptions[result!]}
             </p>
           </div>
@@ -297,7 +297,7 @@ const YoloCoin: React.FC = () => {
       )}
 
       {/* 输入框和按钮 */}
-      <div className="w-full max-w-sm space-y-3 z-10">
+      <div className="w-full max-w-xs sm:max-w-sm space-y-2.5 sm:space-y-3 z-10 px-2">
         {!showResult ? (
           <input
             type="text"
@@ -306,18 +306,18 @@ const YoloCoin: React.FC = () => {
             placeholder={t.coin.placeholder}
             disabled={isSpinning}
             className="w-full bg-white/5 border border-white/20 focus:border-yolo-lime rounded-lg
-              text-white p-4 font-mono text-center text-base
+              text-white p-3 sm:p-4 font-mono text-center text-sm sm:text-base
               focus:outline-none focus:shadow-[0_0_20px_rgba(204,255,0,0.15)]
               placeholder:text-white/30 transition-all disabled:opacity-50"
           />
         ) : (
           <button
             onClick={reset}
-            className="w-full py-4 font-black font-mono text-base uppercase tracking-wider rounded-lg
-              bg-white text-black hover:bg-yolo-lime transition-all duration-200 
-              flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
+            className="w-full py-3 sm:py-4 font-black font-mono text-sm sm:text-base uppercase tracking-wider rounded-lg
+              bg-white text-black hover:bg-yolo-lime active:scale-[0.98] transition-all duration-200
+              flex items-center justify-center gap-2"
           >
-            <RotateCcw className="w-5 h-5" />
+            <RotateCcw className="w-4 h-4 sm:w-5 sm:h-5" />
             TRY AGAIN
           </button>
         )}
@@ -325,7 +325,7 @@ const YoloCoin: React.FC = () => {
 
       {/* 底部提示 */}
       {canInteract && !isSpinning && (
-        <p className="absolute bottom-6 text-white/20 text-xs font-mono z-10">
+        <p className="absolute bottom-4 sm:bottom-6 text-white/20 text-[10px] sm:text-xs font-mono z-10">
           ↑ Hold the coin to spin, release to stop
         </p>
       )}

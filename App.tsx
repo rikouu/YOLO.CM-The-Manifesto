@@ -248,8 +248,8 @@ const AppContent: React.FC = () => {
       {/* Auth Modal */}
       <AuthModal isOpen={authModalOpen} onClose={() => setAuthModalOpen(false)} />
 
-      {/* Main Content Area */}
-      <main className="w-full relative z-10 flex-grow">
+      {/* Main Content Area - 添加最小高度防止 Footer 过早进入视口 */}
+      <main className="w-full relative z-10 flex-grow" style={{ minHeight: 'calc(100dvh - 180px)' }}>
         {mode === AppMode.INTRO && (
           <Hero onStart={() => handleModeChange(AppMode.HOME)} />
         )}
@@ -371,7 +371,7 @@ const AppContent: React.FC = () => {
           </div>
         )}
 
-        {mode === AppMode.PROFILE && <Profile />}
+        {mode === AppMode.PROFILE && <Profile onLogout={() => setMode(AppMode.HOME)} />}
 
         {mode === AppMode.WALL && <ChallengeWall />}
       </main>

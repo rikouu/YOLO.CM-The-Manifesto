@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { X, Heart, MessageCircle, Send, Clock, Skull, Smile } from 'lucide-react';
-import { Challenge, Comment, getChallengeDetail, getComments, addComment, toggleLike, getAssetUrl } from '../services/authService';
+import { createPortal } from 'react-dom';
+import { X, Heart, MessageCircle, Send, Clock, Skull, Smile, ChevronLeft, Share2, Bookmark } from 'lucide-react';
+import { Challenge, Comment, getChallengeDetail, getComments, addComment, toggleLike, getAssetUrl, toggleFollow } from '../services/authService';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
+import { useToast } from './Toast';
+import UserProfileModal from './UserProfileModal';
 
 interface Props {
   challengeId: string;
@@ -22,15 +25,22 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose, onLoginRequired
   const [submitting, setSubmitting] = useState(false);
   const [showFullImage, setShowFullImage] = useState(false);
   const [showEmoji, setShowEmoji] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(false);
+  const [followLoading, setFollowLoading] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
+  const [imageError, setImageError] = useState(false);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const commentInputRef = React.useRef<HTMLInputElement>(null);
   const { user, refreshUser } = useAuth();
   const { language } = useLanguage();
 
   const t = {
-    en: { comments: 'Comments', noComments: 'No comments yet. Be the first!', placeholder: 'Write a comment...', login: 'Login to interact', noLikes: 'No likes left' },
-    zh: { comments: '评论', noComments: '暂无评论，来抢沙发！', placeholder: '写下你的评论...', login: '登录后互动', noLikes: '赞用完了' },
-    ja: { comments: 'コメント', noComments: 'コメントなし、最初になろう！', placeholder: 'コメントを書く...', login: 'ログインして参加', noLikes: 'いいねがありません' }
-  }[language] || { comments: 'Comments', noComments: 'No comments yet. Be the first!', placeholder: 'Write a comment...', login: 'Login to interact', noLikes: 'No likes left' };
+    en: { comments: 'Comments', noComments: 'No comments yet. Be the first!', placeholder: 'Write a comment...', login: 'Login to interact', noLikes: 'No likes left', follow: 'Follow', following: 'Following', comingSoon: 'Coming soon', copied: 'Link copied!' },
+    zh: { comments: '评论', noComments: '暂无评论，来抢沙发！', placeholder: '写下你的评论...', login: '登录后互动', noLikes: '赞用完了', follow: '跟随', following: '已跟随', comingSoon: '功能开发中', copied: '链接已复制！' },
+    ja: { comments: 'コメント', noComments: 'コメントなし、最初になろう！', placeholder: 'コメントを書く...', login: 'ログインして参加', noLikes: 'いいねがありません', follow: 'フォロー', following: 'フォロー中', comingSoon: '近日公開', copied: 'リンクをコピー！' }
+  }[language] || { comments: 'Comments', noComments: 'No comments yet. Be the first!', placeholder: 'Write a comment...', login: 'Login to interact', noLikes: 'No likes left', follow: 'Follow', following: 'Following', comingSoon: 'Coming soon', copied: 'Link copied!' };
+
+  const { showToast } = useToast();
 
   useEffect(() => {
     loadData();
@@ -100,11 +110,162 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose, onLoginRequired
     setNewComment(prev => prev + emoji);
   };
 
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href);
+      showToast(t.copied, 'success');
+    } catch {
+      showToast(t.comingSoon, 'warning');
+    }
+  };
+
+  const handleBookmark = () => {
+    showToast(t.comingSoon, 'warning');
+  };
+
+  const handleFollow = async () => {
+    if (!user) {
+      onLoginRequired?.();
+      return;
+    }
+    if (!challenge?.user?.id || followLoading) return;
+    // 不能跟随自己
+    if (challenge.user.id === user.id) return;
+
+    setFollowLoading(true);
+    try {
+      const result = await toggleFollow(challenge.user.id);
+      setIsFollowing(result.following);
+    } catch (err: any) {
+      if (err.message?.includes('Unauthorized')) onLoginRequired?.();
+    }
+    setFollowLoading(false);
+  };
+
+  // 加载时检查跟随状态
+  useEffect(() => {
+    if (challenge?.user?.id && user) {
+      // 这里可以从 challenge 数据中获取 is_following 状态
+      // 假设后端返回了这个字段
+      setIsFollowing(challenge.user.is_following || false);
+    }
+  }, [challenge, user]);
+
+  // Loading 状态 - 骨架屏
   if (loading) {
-    return (
-      <div className="fixed inset-0 z-[100] bg-black/95 flex items-center justify-center" onClick={onClose}>
-        <div className="w-12 h-12 border-4 border-yolo-lime border-t-transparent rounded-full animate-spin" />
-      </div>
+    return createPortal(
+      <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 md:p-4" onClick={onClose}>
+        <div
+          className="relative bg-[#121212] w-full h-full md:w-[900px] md:h-auto md:max-h-[90vh] md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl animate-scale-in"
+          onClick={e => e.stopPropagation()}
+        >
+          {/* 移动端顶部导航栏骨架 */}
+          <div className="md:hidden flex-shrink-0 bg-[#121212] border-b border-white/5 flex items-center justify-between px-4 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+            <div className="w-6 h-6 bg-white/10 rounded-full animate-pulse" />
+            <div className="w-6 h-6 bg-white/10 rounded-full animate-pulse" />
+          </div>
+
+          {/* 移动端骨架屏 */}
+          <div className="md:hidden flex-1 overflow-hidden">
+            {/* 图片骨架 */}
+            <div className="w-full aspect-[4/3] bg-gradient-to-br from-yolo-pink/10 to-yolo-lime/10 relative overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+            </div>
+            {/* 用户信息骨架 */}
+            <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="w-24 h-4 bg-white/10 rounded animate-pulse" />
+                  <div className="w-16 h-3 bg-white/10 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="w-16 h-7 bg-white/10 rounded-full animate-pulse" />
+            </div>
+            {/* 内容骨架 */}
+            <div className="px-4 py-4 space-y-3">
+              <div className="flex gap-2">
+                <div className="w-16 h-6 bg-white/10 rounded-full animate-pulse" />
+                <div className="w-20 h-6 bg-white/10 rounded-full animate-pulse" />
+              </div>
+              <div className="w-full h-6 bg-white/10 rounded animate-pulse" />
+              <div className="w-3/4 h-6 bg-white/10 rounded animate-pulse" />
+              <div className="space-y-2 pt-2">
+                <div className="w-full h-4 bg-white/10 rounded animate-pulse" />
+                <div className="w-full h-4 bg-white/10 rounded animate-pulse" />
+                <div className="w-2/3 h-4 bg-white/10 rounded animate-pulse" />
+              </div>
+            </div>
+          </div>
+
+          {/* 桌面端骨架屏 - 左侧 */}
+          <div className="hidden md:flex flex-1 bg-black items-center justify-center relative overflow-hidden">
+            <div className="w-full h-full min-h-[400px] bg-gradient-to-br from-yolo-pink/10 to-yolo-lime/10 relative overflow-hidden">
+              <div className="absolute inset-0 -translate-x-full animate-shimmer bg-gradient-to-r from-transparent via-white/5 to-transparent" />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-16 h-16 border-4 border-yolo-pink/30 border-t-yolo-pink rounded-full animate-spin" />
+              </div>
+            </div>
+          </div>
+
+          {/* 桌面端骨架屏 - 右侧 */}
+          <div className="hidden md:flex flex-col md:w-[400px] md:min-w-[380px]">
+            {/* 用户信息骨架 */}
+            <div className="flex-shrink-0 px-4 py-3 border-b border-white/5 flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-white/10 animate-pulse" />
+                <div className="space-y-2">
+                  <div className="w-24 h-4 bg-white/10 rounded animate-pulse" />
+                  <div className="w-16 h-3 bg-white/10 rounded animate-pulse" />
+                </div>
+              </div>
+              <div className="w-16 h-7 bg-white/10 rounded-full animate-pulse" />
+            </div>
+            {/* 内容骨架 */}
+            <div className="flex-1 px-4 py-4 space-y-3">
+              <div className="flex gap-2">
+                <div className="w-16 h-6 bg-white/10 rounded-full animate-pulse" style={{ animationDelay: '100ms' }} />
+                <div className="w-20 h-6 bg-white/10 rounded-full animate-pulse" style={{ animationDelay: '200ms' }} />
+                <div className="w-16 h-6 bg-white/10 rounded-full animate-pulse" style={{ animationDelay: '300ms' }} />
+              </div>
+              <div className="w-full h-6 bg-white/10 rounded animate-pulse" style={{ animationDelay: '150ms' }} />
+              <div className="w-3/4 h-6 bg-white/10 rounded animate-pulse" style={{ animationDelay: '200ms' }} />
+              <div className="space-y-2 pt-2">
+                <div className="w-full h-4 bg-white/10 rounded animate-pulse" style={{ animationDelay: '250ms' }} />
+                <div className="w-full h-4 bg-white/10 rounded animate-pulse" style={{ animationDelay: '300ms' }} />
+                <div className="w-2/3 h-4 bg-white/10 rounded animate-pulse" style={{ animationDelay: '350ms' }} />
+              </div>
+              {/* 评论区骨架 */}
+              <div className="pt-4 border-t border-white/5 mt-4">
+                <div className="w-20 h-5 bg-white/10 rounded animate-pulse mb-4" />
+                <div className="space-y-4">
+                  {[0, 1, 2].map(i => (
+                    <div key={i} className="flex gap-3" style={{ animationDelay: `${400 + i * 100}ms` }}>
+                      <div className="w-8 h-8 rounded-full bg-white/10 animate-pulse flex-shrink-0" />
+                      <div className="flex-1 space-y-2">
+                        <div className="w-24 h-3 bg-white/10 rounded animate-pulse" />
+                        <div className="w-full h-4 bg-white/10 rounded animate-pulse" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            {/* 底部互动栏骨架 */}
+            <div className="flex-shrink-0 border-t border-white/5 px-4 py-3">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-4">
+                  <div className="w-16 h-6 bg-white/10 rounded animate-pulse" />
+                  <div className="w-16 h-6 bg-white/10 rounded animate-pulse" />
+                </div>
+                <div className="w-6 h-6 bg-white/10 rounded animate-pulse" />
+              </div>
+              <div className="w-full h-10 bg-white/10 rounded-full animate-pulse" />
+            </div>
+          </div>
+        </div>
+      </div>,
+      document.body
     );
   }
 
@@ -113,210 +274,522 @@ const ChallengeModal: React.FC<Props> = ({ challengeId, onClose, onLoginRequired
 
   // 全屏图片查看
   if (showFullImage && challenge.photo_url) {
-    return (
-      <div className="fixed inset-0 z-[110] bg-black flex items-center justify-center" onClick={() => setShowFullImage(false)}>
-        <button onClick={() => setShowFullImage(false)} className="absolute top-4 right-4 w-12 h-12 bg-white/10 hover:bg-white/20 text-white flex items-center justify-center rounded-full transition-colors z-20">
-          <X className="w-8 h-8" />
+    return createPortal(
+      <div
+        className="fixed inset-0 z-[10000] bg-black flex items-center justify-center"
+        onClick={() => setShowFullImage(false)}
+        style={{
+          paddingTop: 'env(safe-area-inset-top)',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        <button
+          onClick={() => setShowFullImage(false)}
+          className="absolute top-4 right-4 w-10 h-10 bg-white/10 backdrop-blur-sm text-white flex items-center justify-center rounded-full transition-colors z-20 active:scale-95 hover:bg-white/20"
+          style={{ top: 'max(env(safe-area-inset-top), 16px)' }}
+        >
+          <X className="w-5 h-5" />
         </button>
-        <img src={getAssetUrl(challenge.photo_url)} alt="" className="max-w-full max-h-full object-contain" />
-      </div>
+        <img
+          src={getAssetUrl(challenge.photo_url)}
+          alt=""
+          className="max-w-[95vw] max-h-[90vh] object-contain"
+        />
+      </div>,
+      document.body
     );
   }
 
-  const handleBackdropClick = (e: React.MouseEvent | React.TouchEvent) => {
-    // 只有点击背景时才关闭，不是滑动
-    if (e.target === e.currentTarget) {
-      onClose();
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-[100]">
-      {/* 背景遮罩 */}
-      <div className="absolute inset-0 bg-black/90" onClick={onClose} />
-      
-      {/* 滚动内容区 - 移动端可滚动，桌面端居中 */}
-      <div 
-        className="relative h-full overflow-y-auto md:overflow-hidden md:flex md:items-center md:justify-center"
-        style={{ WebkitOverflowScrolling: 'touch' }}
+  return createPortal(
+    <div className="fixed inset-0 z-[9999] bg-black/60 backdrop-blur-sm flex items-center justify-center p-0 md:p-4" onClick={onClose}>
+      {/* 小红书风格弹窗容器 */}
+      <div
+        className="relative bg-[#121212] w-full h-full md:w-[900px] md:h-auto md:max-h-[90vh] md:rounded-2xl overflow-hidden flex flex-col md:flex-row shadow-2xl"
+        onClick={e => e.stopPropagation()}
       >
-        <div className="min-h-full md:min-h-0 flex items-start md:items-center justify-center pt-16 md:pt-0 px-4 md:px-8 pb-4 md:pb-0">
-          {/* 3D 卡片容器 - 桌面端限制最大高度 */}
-          <div 
-            className="relative w-full max-w-lg md:max-w-4xl md:max-h-[85vh] bg-[#0a0a0a] border-2 border-yolo-lime/50 animate-in zoom-in duration-300 shadow-[0_20px_40px_-10px_rgba(204,255,0,0.3),8px_8px_0_0_rgba(255,0,204,0.3)] transition-all duration-300 md:flex md:flex-col"
-          >
-        {/* 关闭按钮 */}
-        <button onClick={onClose} className="absolute -top-3 -right-3 w-10 h-10 bg-yolo-pink text-black flex items-center justify-center hover:bg-white hover:scale-110 transition-all z-20 rounded-full shadow-lg border-2 border-black">
-          <X className="w-5 h-5" />
-        </button>
+        {/* 移动端顶部导航栏 */}
+        <div className="md:hidden flex-shrink-0 bg-[#121212] border-b border-white/5 flex items-center justify-between px-4 py-3" style={{ paddingTop: 'max(env(safe-area-inset-top), 12px)' }}>
+          <button onClick={onClose} className="p-1 -ml-1">
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+          <div className="flex items-center gap-3">
+            <button onClick={handleShare} className="p-2 text-white/60 hover:text-white active:scale-95 transition-all">
+              <Share2 className="w-5 h-5" />
+            </button>
+          </div>
+        </div>
 
-        <div className="flex flex-col md:flex-row md:h-full md:overflow-hidden">
-          {/* 左侧：图片 - 移动端隐藏或缩小 */}
-          {challenge.photo_url && (
-            <div className="hidden md:flex md:w-1/2 bg-black items-center justify-center cursor-pointer group flex-shrink-0" onClick={() => setShowFullImage(true)}>
-              <div className="relative w-full h-full flex items-center justify-center">
-                <img src={getAssetUrl(challenge.photo_url)} alt="" className="w-full h-auto max-h-full object-contain" />
-                <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
-                  <span className="opacity-0 group-hover:opacity-100 text-white text-sm font-mono transition-opacity">
-                    {language === 'zh' ? '点击查看大图' : language === 'ja' ? 'クリックで拡大' : 'Click to enlarge'}
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* 右侧：详情 - 桌面端内部滚动 */}
-          <div className={`${challenge.photo_url ? 'md:w-1/2' : 'w-full'} flex flex-col md:overflow-y-auto`}>
-            {/* 用户信息 */}
-            <div className="p-3 md:p-4 border-b border-yolo-gray/50 flex items-center gap-2 md:gap-3 flex-shrink-0">
-              <div className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-yolo-lime flex items-center justify-center text-black font-black text-sm overflow-hidden flex-shrink-0">
-                {challenge.user?.avatar ? (
-                  <img src={getAssetUrl(challenge.user.avatar)} alt="" className="w-full h-full object-cover" />
-                ) : (
-                  (challenge.user?.nickname || challenge.user?.username || '?')[0].toUpperCase()
-                )}
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="font-bold text-white text-sm md:text-base truncate">{challenge.user?.nickname || challenge.user?.username}</div>
-                <div className="text-[10px] md:text-xs text-white/40 font-mono truncate">@{challenge.user?.username}</div>
-              </div>
-              <div className="bg-yolo-pink text-black px-2 py-0.5 md:py-1 text-[10px] md:text-xs font-black flex-shrink-0">{challenge.category}</div>
-            </div>
-
-            {/* 挑战内容 */}
-            <div className="p-3 md:p-4 border-b border-yolo-gray/50 flex-shrink-0">
-              <h2 className="text-base md:text-xl font-black text-white mb-2">{challenge.title}</h2>
-              <p className="text-white/60 text-sm md:text-base mb-2 md:mb-3">{challenge.description}</p>
-              <div className="flex gap-3 md:gap-4 text-[10px] md:text-xs font-mono">
-                <span className="flex items-center gap-1 text-yolo-lime"><Clock className="w-3 h-3" /> {challenge.estimated_time}</span>
-                <span className="flex items-center gap-1 text-yolo-pink"><Skull className="w-3 h-3" /> {challenge.difficulty}/100</span>
-              </div>
-            </div>
-
-            {/* 点赞和评论数 */}
-            <div className="p-3 md:p-4 border-b border-yolo-gray/50 flex items-center gap-4 md:gap-6 flex-shrink-0">
-              <button 
-                onClick={handleLike}
-                disabled={!user || liking}
-                className={`flex items-center gap-1.5 md:gap-2 transition-all ${challenge.liked_by_me ? 'text-yolo-pink scale-110' : 'text-white/70 hover:text-yolo-pink hover:scale-105'} disabled:opacity-50`}
-              >
-                <Heart className={`w-5 h-5 md:w-6 md:h-6 ${challenge.liked_by_me ? 'fill-current' : ''}`} />
-                <span className="font-bold text-white text-sm md:text-base">{challenge.like_count || 0}</span>
-              </button>
-              <button 
-                onClick={handleCommentClick}
-                className="flex items-center gap-1.5 md:gap-2 text-white/70 hover:text-yolo-lime transition-colors"
-              >
-                <MessageCircle className="w-5 h-5 md:w-6 md:h-6" />
-                <span className="font-bold text-white text-sm md:text-base">{challenge.comment_count || 0}</span>
-              </button>
-              {user && (
-                <div className="ml-auto text-[10px] md:text-xs text-white/50 font-mono flex items-center gap-1">
-                  <Heart className="w-3 h-3 text-yolo-pink fill-current" /> {user.stats?.likes || user.likes || 0}
-                </div>
-              )}
-            </div>
-
-
-            {/* 移动端图片预览 */}
-            {challenge.photo_url && (
-              <div className="md:hidden border-b border-yolo-gray/50 p-2">
-                <button 
-                  type="button"
-                  className="relative w-full cursor-pointer"
-                  onClick={(e) => { e.stopPropagation(); setShowFullImage(true); }}
-                >
-                  <img src={getAssetUrl(challenge.photo_url)} alt="" className="w-full h-auto max-h-[25vh] object-contain bg-black/50 rounded" />
-                  <div className="absolute bottom-2 right-2 bg-black/80 text-yolo-lime text-[10px] px-2 py-1 rounded font-mono">
-                    {language === 'zh' ? '点击放大' : language === 'ja' ? 'タップで拡大' : 'Tap to enlarge'}
+        {/* 移动端：整体可滚动区域 */}
+        <div className="md:hidden flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+          {/* 图片区域 - 移动端限制最大高度 */}
+          <div className="w-full bg-black relative">
+            {challenge.photo_url && !imageError ? (
+              <>
+                {/* 图片加载中的占位 */}
+                {!imageLoaded && (
+                  <div className="w-full aspect-[4/3] bg-gradient-to-br from-yolo-pink/20 to-yolo-lime/20 flex items-center justify-center">
+                    <div className="w-10 h-10 border-4 border-yolo-pink border-t-transparent rounded-full animate-spin" />
                   </div>
+                )}
+                <button
+                  type="button"
+                  className={`w-full cursor-pointer ${!imageLoaded ? 'absolute inset-0 opacity-0' : ''}`}
+                  onClick={() => setShowFullImage(true)}
+                >
+                  <img
+                    src={getAssetUrl(challenge.photo_url)}
+                    alt=""
+                    className="w-full h-auto max-h-[60vh] object-contain mx-auto"
+                    onLoad={() => setImageLoaded(true)}
+                    onError={() => setImageError(true)}
+                  />
                 </button>
+              </>
+            ) : (
+              <div className="w-full aspect-[4/3] bg-gradient-to-br from-yolo-pink/20 to-yolo-lime/20 flex items-center justify-center">
+                <div className="text-center p-6">
+                  <div className="text-6xl mb-4">🔥</div>
+                  <p className="text-white/60 font-bold text-lg mb-1">{challenge.category}</p>
+                  <p className="text-white/40 font-mono text-xs line-clamp-2 px-4">{challenge.title}</p>
+                </div>
               </div>
             )}
+          </div>
 
-            {/* 评论区 - 移动端限制高度，桌面端自适应 */}
-            <div className="p-3 md:p-4 space-y-3 md:space-y-4 max-h-[30vh] md:max-h-none md:flex-1 overflow-y-auto">
-              <h3 className="text-sm font-bold text-white/50 uppercase tracking-wider">{t.comments}</h3>
-              {comments.length === 0 ? (
-                <p className="text-white/30 text-sm font-mono">{t.noComments}</p>
-              ) : (
-                comments.map(c => (
+          {/* 用户信息 */}
+          <div className="px-4 py-3 border-b border-white/5 flex items-center justify-between bg-[#121212]">
+            <div
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity active:scale-[0.98]"
+              onClick={() => challenge.user?.id && setSelectedUserId(challenge.user.id)}
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yolo-pink to-yolo-lime p-[2px]">
+                <div className="w-full h-full rounded-full bg-[#121212] flex items-center justify-center overflow-hidden">
+                  {challenge.user?.avatar ? (
+                    <img src={getAssetUrl(challenge.user.avatar)} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-bold text-sm">
+                      {(challenge.user?.nickname || challenge.user?.username || '?')[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="font-bold text-white text-sm">{challenge.user?.nickname || challenge.user?.username}</div>
+                <div className="text-xs text-white/40">@{challenge.user?.username}</div>
+              </div>
+            </div>
+            <button
+              onClick={handleFollow}
+              disabled={followLoading || (user && challenge.user?.id === user.id)}
+              className={`px-4 py-1.5 text-xs font-bold rounded-full active:scale-95 transition-all disabled:opacity-50 ${
+                isFollowing
+                  ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+                  : 'bg-yolo-pink text-black hover:bg-yolo-pink/80'
+              }`}
+            >
+              {followLoading ? '...' : isFollowing ? t.following : t.follow}
+            </button>
+          </div>
+
+          {/* 挑战内容 */}
+          <div className="px-4 py-4">
+            <div className="flex items-center gap-2 mb-3 flex-wrap">
+              <span className="bg-yolo-pink/20 text-yolo-pink px-2.5 py-1 text-xs font-bold rounded-full">
+                {challenge.category}
+              </span>
+              <span className="bg-white/5 text-white/60 px-2.5 py-1 text-xs font-mono rounded-full flex items-center gap-1">
+                <Skull className="w-3 h-3" /> {challenge.difficulty}/100
+              </span>
+              <span className="bg-white/5 text-white/60 px-2.5 py-1 text-xs font-mono rounded-full flex items-center gap-1">
+                <Clock className="w-3 h-3" /> {challenge.estimated_time}
+              </span>
+            </div>
+            <h2 className="text-lg font-black text-white mb-3 leading-snug">{challenge.title}</h2>
+            <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{challenge.description}</p>
+          </div>
+
+          {/* 分隔线 */}
+          <div className="h-2 bg-white/5"></div>
+
+          {/* 评论区 */}
+          <div className="px-4 py-4 pb-32">
+            <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+              {t.comments}
+              <span className="text-white/40 font-normal">({challenge.comment_count || 0})</span>
+            </h3>
+
+            {comments.length === 0 ? (
+              <div className="py-8 text-center">
+                <MessageCircle className="w-10 h-10 mx-auto text-white/20 mb-2" />
+                <p className="text-white/30 text-sm">{t.noComments}</p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map(c => (
                   <div key={c.id} className="flex gap-3">
-                    <div className="w-8 h-8 rounded-full bg-yolo-gray/50 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white overflow-hidden">
+                    <div
+                      className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-yolo-pink/50 transition-all"
+                      onClick={() => c.user?.id && setSelectedUserId(c.user.id)}
+                    >
                       {c.user?.avatar ? (
                         <img src={getAssetUrl(c.user.avatar)} alt="" className="w-full h-full object-cover" />
                       ) : (
                         (c.user?.nickname || c.user?.username || '?')[0].toUpperCase()
                       )}
                     </div>
-                    <div className="flex-1">
-                      <div className="text-sm">
-                        <span className="font-bold text-yolo-lime">{c.user?.nickname || c.user?.username}</span>
-                        <span className="text-white/70 ml-2">{c.content}</span>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-baseline gap-2">
+                        <span
+                          className="font-bold text-white text-sm cursor-pointer hover:text-yolo-pink transition-colors"
+                          onClick={() => c.user?.id && setSelectedUserId(c.user.id)}
+                        >
+                          {c.user?.nickname || c.user?.username}
+                        </span>
+                        <span className="text-white/30 text-xs">{new Date(c.created_at).toLocaleDateString()}</span>
                       </div>
-                      <div className="text-xs text-white/30 font-mono mt-1">
-                        {new Date(c.created_at).toLocaleDateString()}
-                      </div>
+                      <p className="text-white/80 text-sm mt-1 leading-relaxed">{c.content}</p>
                     </div>
                   </div>
-                ))
-              )}
-            </div>
-
-            {/* 评论输入 */}
-            {user ? (
-              <div className="p-2 md:p-4 border-t border-yolo-gray/50 flex-shrink-0">
-                {/* Emoji 选择器 */}
-                {showEmoji && (
-                  <div className="mb-2 p-2 bg-black/50 border border-yolo-gray/50 rounded flex flex-wrap gap-1 max-h-[120px] overflow-y-auto">
-                    {EMOJIS.map(emoji => (
-                      <button
-                        key={emoji}
-                        type="button"
-                        onClick={() => insertEmoji(emoji)}
-                        className="w-7 h-7 md:w-8 md:h-8 hover:bg-yolo-lime/20 rounded flex items-center justify-center text-base md:text-lg transition-colors"
-                      >
-                        {emoji}
-                      </button>
-                    ))}
-                  </div>
-                )}
-                <form onSubmit={handleComment} className="flex gap-1.5 md:gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setShowEmoji(!showEmoji)}
-                    className={`px-2 md:px-3 py-2 border transition-colors ${showEmoji ? 'border-yolo-lime text-yolo-lime' : 'border-yolo-gray/50 text-white/50 hover:text-yolo-lime'}`}
-                  >
-                    <Smile className="w-4 h-4 md:w-5 md:h-5" />
-                  </button>
-                  <input
-                    ref={commentInputRef}
-                    type="text"
-                    value={newComment}
-                    onChange={e => setNewComment(e.target.value)}
-                    placeholder={t.placeholder}
-                    className="flex-1 min-w-0 bg-black border border-yolo-gray/50 text-white px-2 md:px-3 py-2 text-sm focus:border-yolo-lime focus:outline-none"
-                  />
-                  <button
-                    type="submit"
-                    disabled={!newComment.trim() || submitting}
-                    className="px-3 md:px-4 py-2 bg-yolo-lime text-black font-bold disabled:opacity-50 hover:bg-white transition-colors"
-                  >
-                    <Send className="w-4 h-4" />
-                  </button>
-                </form>
-              </div>
-            ) : (
-              <div className="p-3 md:p-4 border-t border-yolo-gray/50 text-center text-white/40 text-xs md:text-sm font-mono flex-shrink-0">
-                {t.login}
+                ))}
               </div>
             )}
           </div>
         </div>
+
+        {/* 移动端底部固定互动栏 */}
+        <div className="md:hidden flex-shrink-0 fixed bottom-0 left-0 right-0 border-t border-white/5 bg-[#121212]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}>
+          {/* 互动按钮 */}
+          <div className="px-4 py-2 flex items-center justify-between border-b border-white/5">
+            <div className="flex items-center gap-4">
+              <button
+                onClick={handleLike}
+                disabled={!user || liking}
+                className={`flex items-center gap-1.5 transition-all ${challenge.liked_by_me ? 'text-yolo-pink' : 'text-white/60 hover:text-yolo-pink'} disabled:opacity-50`}
+              >
+                <Heart className={`w-5 h-5 ${challenge.liked_by_me ? 'fill-current' : ''} ${liking ? 'animate-pulse' : ''}`} />
+                <span className="text-sm font-bold">{challenge.like_count || 0}</span>
+              </button>
+              <button
+                onClick={handleCommentClick}
+                className="flex items-center gap-1.5 text-white/60 hover:text-yolo-lime transition-colors"
+              >
+                <MessageCircle className="w-5 h-5" />
+                <span className="text-sm font-bold">{challenge.comment_count || 0}</span>
+              </button>
+            </div>
+            <button onClick={handleBookmark} className="p-2 text-white/40 hover:text-white active:scale-95 transition-all">
+              <Bookmark className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* 评论输入 */}
+          <div className="px-4 py-2">
+            {user ? (
+              <form onSubmit={handleComment} className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowEmoji(!showEmoji)}
+                  className={`p-2 rounded-full transition-colors ${showEmoji ? 'text-yolo-lime bg-yolo-lime/10' : 'text-white/40 hover:text-white/60'}`}
+                >
+                  <Smile className="w-5 h-5" />
+                </button>
+                <input
+                  ref={commentInputRef}
+                  type="text"
+                  value={newComment}
+                  onChange={e => setNewComment(e.target.value)}
+                  placeholder={t.placeholder}
+                  className="flex-1 bg-white/5 text-white px-4 py-2 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-yolo-pink/50 placeholder:text-white/30"
+                />
+                <button
+                  type="submit"
+                  disabled={!newComment.trim() || submitting}
+                  className="p-2 bg-yolo-pink text-black rounded-full disabled:opacity-30 hover:bg-yolo-pink/80 transition-colors"
+                >
+                  <Send className="w-4 h-4" />
+                </button>
+              </form>
+            ) : (
+              <button
+                onClick={() => onLoginRequired?.()}
+                className="w-full py-2 text-center text-white/40 text-sm font-mono hover:text-yolo-pink transition-colors"
+              >
+                {t.login}
+              </button>
+            )}
+          </div>
+
+          {/* Emoji 选择器 - 移动端 */}
+          {showEmoji && user && (
+            <div className="px-4 pb-2">
+              <div className="p-2 bg-white/5 rounded-xl flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
+                {EMOJIS.map(emoji => (
+                  <button
+                    key={emoji}
+                    type="button"
+                    onClick={() => insertEmoji(emoji)}
+                    className="w-8 h-8 hover:bg-white/10 rounded-lg flex items-center justify-center text-lg transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 桌面端：左右分栏布局 */}
+        {/* 左侧：图片区域 */}
+        <div className="hidden md:flex flex-1 bg-black items-center justify-center relative overflow-hidden">
+          {challenge.photo_url && !imageError ? (
+            <>
+              {/* 图片加载中的占位 */}
+              {!imageLoaded && (
+                <div className="absolute inset-0 bg-gradient-to-br from-yolo-pink/20 to-yolo-lime/20 flex items-center justify-center">
+                  <div className="w-12 h-12 border-4 border-yolo-pink border-t-transparent rounded-full animate-spin" />
+                </div>
+              )}
+              <button
+                type="button"
+                className="w-full h-full cursor-pointer"
+                onClick={() => setShowFullImage(true)}
+              >
+                <img
+                  src={getAssetUrl(challenge.photo_url)}
+                  alt=""
+                  className={`w-full h-auto md:h-full md:w-auto md:max-h-[90vh] object-contain mx-auto transition-opacity duration-300 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
+                  onLoad={() => setImageLoaded(true)}
+                  onError={() => setImageError(true)}
+                />
+              </button>
+            </>
+          ) : (
+            <div className="w-full h-full min-h-[300px] bg-gradient-to-br from-yolo-pink/20 to-yolo-lime/20 flex items-center justify-center">
+              <div className="text-center p-8">
+                <div className="text-8xl mb-6">🔥</div>
+                <p className="text-white/60 font-bold text-xl mb-2">{challenge.category}</p>
+                <p className="text-white/40 font-mono text-sm">{challenge.title}</p>
+              </div>
+            </div>
+          )}
+
+          {/* 桌面端关闭按钮 */}
+          <button
+            onClick={onClose}
+            className="hidden md:flex absolute top-4 left-4 w-10 h-10 bg-black/50 backdrop-blur-sm text-white items-center justify-center rounded-full hover:bg-black/70 transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+
+        {/* 右侧：内容区域 - 仅桌面端显示 */}
+        <div className="hidden md:flex flex-1 flex-col min-h-0 md:w-[400px] md:min-w-[380px]">
+          {/* 用户信息头部 */}
+          <div className="flex-shrink-0 px-4 py-3 border-b border-white/5 flex items-center justify-between">
+            <div
+              className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity active:scale-[0.98]"
+              onClick={() => challenge.user?.id && setSelectedUserId(challenge.user.id)}
+            >
+              <div className="w-10 h-10 rounded-full bg-gradient-to-br from-yolo-pink to-yolo-lime p-[2px]">
+                <div className="w-full h-full rounded-full bg-[#121212] flex items-center justify-center overflow-hidden">
+                  {challenge.user?.avatar ? (
+                    <img src={getAssetUrl(challenge.user.avatar)} alt="" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-bold text-sm">
+                      {(challenge.user?.nickname || challenge.user?.username || '?')[0].toUpperCase()}
+                    </span>
+                  )}
+                </div>
+              </div>
+              <div>
+                <div className="font-bold text-white text-sm">{challenge.user?.nickname || challenge.user?.username}</div>
+                <div className="text-xs text-white/40">@{challenge.user?.username}</div>
+              </div>
+            </div>
+            <button
+              onClick={handleFollow}
+              disabled={followLoading || (user && challenge.user?.id === user.id)}
+              className={`px-4 py-1.5 text-xs font-bold rounded-full active:scale-95 transition-all disabled:opacity-50 ${
+                isFollowing
+                  ? 'bg-white/10 text-white border border-white/20 hover:bg-white/20'
+                  : 'bg-yolo-pink text-black hover:bg-yolo-pink/80'
+              }`}
+            >
+              {followLoading ? '...' : isFollowing ? t.following : t.follow}
+            </button>
+          </div>
+
+          {/* 可滚动内容 */}
+          <div className="flex-1 overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }}>
+            {/* 挑战内容 */}
+            <div className="px-4 py-4">
+              {/* 分类和难度标签 */}
+              <div className="flex items-center gap-2 mb-3 flex-wrap">
+                <span className="bg-yolo-pink/20 text-yolo-pink px-2.5 py-1 text-xs font-bold rounded-full">
+                  {challenge.category}
+                </span>
+                <span className="bg-white/5 text-white/60 px-2.5 py-1 text-xs font-mono rounded-full flex items-center gap-1">
+                  <Skull className="w-3 h-3" /> {challenge.difficulty}/100
+                </span>
+                <span className="bg-white/5 text-white/60 px-2.5 py-1 text-xs font-mono rounded-full flex items-center gap-1">
+                  <Clock className="w-3 h-3" /> {challenge.estimated_time}
+                </span>
+              </div>
+
+              {/* 标题 */}
+              <h2 className="text-lg font-black text-white mb-3 leading-snug">{challenge.title}</h2>
+
+              {/* 描述 */}
+              <p className="text-white/70 text-sm leading-relaxed whitespace-pre-wrap">{challenge.description}</p>
+            </div>
+
+            {/* 分隔线 */}
+            <div className="h-2 bg-white/5"></div>
+
+            {/* 评论区 */}
+            <div className="px-4 py-4">
+              <h3 className="text-sm font-bold text-white mb-4 flex items-center gap-2">
+                {t.comments}
+                <span className="text-white/40 font-normal">({challenge.comment_count || 0})</span>
+              </h3>
+
+              {comments.length === 0 ? (
+                <div className="py-8 text-center">
+                  <MessageCircle className="w-10 h-10 mx-auto text-white/20 mb-2" />
+                  <p className="text-white/30 text-sm">{t.noComments}</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {comments.map(c => (
+                    <div key={c.id} className="flex gap-3">
+                      <div
+                        className="w-8 h-8 rounded-full bg-gradient-to-br from-purple-500/30 to-pink-500/30 flex-shrink-0 flex items-center justify-center text-xs font-bold text-white overflow-hidden cursor-pointer hover:ring-2 hover:ring-yolo-pink/50 transition-all"
+                        onClick={() => c.user?.id && setSelectedUserId(c.user.id)}
+                      >
+                        {c.user?.avatar ? (
+                          <img src={getAssetUrl(c.user.avatar)} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          (c.user?.nickname || c.user?.username || '?')[0].toUpperCase()
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-baseline gap-2">
+                          <span
+                            className="font-bold text-white text-sm cursor-pointer hover:text-yolo-pink transition-colors"
+                            onClick={() => c.user?.id && setSelectedUserId(c.user.id)}
+                          >
+                            {c.user?.nickname || c.user?.username}
+                          </span>
+                          <span className="text-white/30 text-xs">{new Date(c.created_at).toLocaleDateString()}</span>
+                        </div>
+                        <p className="text-white/80 text-sm mt-1 leading-relaxed">{c.content}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* 底部互动栏 */}
+          <div className="flex-shrink-0 border-t border-white/5 bg-[#121212]" style={{ paddingBottom: 'max(env(safe-area-inset-bottom), 0px)' }}>
+            {/* 互动按钮 */}
+            <div className="px-4 py-3 flex items-center justify-between border-b border-white/5">
+              <div className="flex items-center gap-4">
+                <button
+                  onClick={handleLike}
+                  disabled={!user || liking}
+                  className={`flex items-center gap-1.5 transition-all ${challenge.liked_by_me ? 'text-yolo-pink' : 'text-white/60 hover:text-yolo-pink'} disabled:opacity-50`}
+                >
+                  <Heart className={`w-6 h-6 ${challenge.liked_by_me ? 'fill-current' : ''} ${liking ? 'animate-pulse' : ''}`} />
+                  <span className="text-sm font-bold">{challenge.like_count || 0}</span>
+                </button>
+                <button
+                  onClick={handleCommentClick}
+                  className="flex items-center gap-1.5 text-white/60 hover:text-yolo-lime transition-colors"
+                >
+                  <MessageCircle className="w-6 h-6" />
+                  <span className="text-sm font-bold">{challenge.comment_count || 0}</span>
+                </button>
+              </div>
+              <div className="flex items-center gap-3">
+                <button onClick={handleBookmark} className="p-2 text-white/40 hover:text-white active:scale-95 transition-all">
+                  <Bookmark className="w-5 h-5" />
+                </button>
+                <button onClick={handleShare} className="p-2 text-white/40 hover:text-white active:scale-95 transition-all hidden md:block">
+                  <Share2 className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* 评论输入 */}
+            <div className="px-4 py-3">
+              {user ? (
+                <>
+                  {showEmoji && (
+                    <div className="mb-3 p-2 bg-white/5 rounded-xl flex flex-wrap gap-1 max-h-[80px] overflow-y-auto">
+                      {EMOJIS.map(emoji => (
+                        <button
+                          key={emoji}
+                          type="button"
+                          onClick={() => insertEmoji(emoji)}
+                          className="w-8 h-8 hover:bg-white/10 rounded-lg flex items-center justify-center text-lg transition-colors"
+                        >
+                          {emoji}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                  <form onSubmit={handleComment} className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowEmoji(!showEmoji)}
+                      className={`p-2 rounded-full transition-colors ${showEmoji ? 'text-yolo-lime bg-yolo-lime/10' : 'text-white/40 hover:text-white/60'}`}
+                    >
+                      <Smile className="w-5 h-5" />
+                    </button>
+                    <div className="flex-1 relative">
+                      <input
+                        ref={commentInputRef}
+                        type="text"
+                        value={newComment}
+                        onChange={e => setNewComment(e.target.value)}
+                        placeholder={t.placeholder}
+                        className="w-full bg-white/5 text-white px-4 py-2.5 text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-yolo-pink/50 placeholder:text-white/30"
+                      />
+                    </div>
+                    <button
+                      type="submit"
+                      disabled={!newComment.trim() || submitting}
+                      className="p-2.5 bg-yolo-pink text-black rounded-full disabled:opacity-30 hover:bg-yolo-pink/80 transition-colors"
+                    >
+                      <Send className="w-4 h-4" />
+                    </button>
+                  </form>
+                </>
+              ) : (
+                <button
+                  onClick={() => onLoginRequired?.()}
+                  className="w-full py-3 text-center text-white/40 text-sm font-mono hover:text-yolo-pink transition-colors"
+                >
+                  {t.login}
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* 用户主页弹窗 */}
+      {selectedUserId && (
+        <UserProfileModal
+          userId={selectedUserId}
+          onClose={() => setSelectedUserId(null)}
+          onLoginRequired={onLoginRequired}
+        />
+      )}
+    </div>,
+    document.body
   );
 };
 

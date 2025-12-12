@@ -16,28 +16,33 @@ import { soundManager } from '../services/soundService';
 const CustomScatterPoint = (props: any) => {
   const { cx, cy, fill, index } = props;
   const [hovered, setHovered] = useState(false);
-  
+
   // Stagger animation based on index
   const animationDelay = `${index * 100}ms`;
-  
+
   // Random idle pulse delay to make it look organic
   const idleDelay = useMemo(() => `${Math.random() * 3}s`, []);
 
   return (
     <g transform={`translate(${cx}, ${cy})`}>
       <g style={{ animation: `pointEnter 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) ${animationDelay} both` }}>
-        {/* Hover trigger area (invisible but larger) */}
-        <circle 
-            r={24} 
-            fill="transparent" 
+        {/* Hover trigger area (invisible but larger for better touch targets) */}
+        <circle
+            r={32}
+            fill="transparent"
             onMouseEnter={() => {
                 setHovered(true);
                 soundManager.playHover();
             }}
             onMouseLeave={() => setHovered(false)}
-            style={{ cursor: 'pointer' }}
+            onTouchStart={() => {
+                setHovered(true);
+                soundManager.playHover();
+            }}
+            onTouchEnd={() => setHovered(false)}
+            style={{ cursor: 'pointer', touchAction: 'manipulation' }}
         />
-        
+
         {/* Idle Beacon Ripple - subtle animation to suggest interactivity */}
         {!hovered && (
              <circle
@@ -46,37 +51,37 @@ const CustomScatterPoint = (props: any) => {
                 stroke={fill}
                 strokeWidth={1}
                 className="opacity-0"
-                style={{ 
+                style={{
                     animation: `ripple 3s infinite ${idleDelay}`,
                     pointerEvents: 'none'
                 }}
             />
         )}
 
-        {/* Visible Point */}
-        <circle 
-            r={hovered ? 12 : 6}
+        {/* Visible Point - larger on mobile */}
+        <circle
+            r={hovered ? 14 : 8}
             fill={fill}
             stroke="#050505"
             strokeWidth={2}
             className="transition-all duration-300 ease-out"
-            style={{ pointerEvents: 'none' }} 
+            style={{ pointerEvents: 'none' }}
         />
 
         {/* Hover Effect Ring */}
         <circle
-            r={hovered ? 20 : 6}
+            r={hovered ? 24 : 8}
             fill="none"
             stroke={fill}
             strokeWidth={1}
             className={`transition-all duration-300 ease-out ${hovered ? 'opacity-100' : 'opacity-0'}`}
             style={{ pointerEvents: 'none' }}
         />
-        
+
         {/* Active Pulse when hovered */}
         {hovered && (
              <circle
-                r={20}
+                r={24}
                 fill="none"
                 stroke={fill}
                 strokeWidth={1}
@@ -114,10 +119,10 @@ const RegretChart: React.FC = () => {
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-yolo-black border border-yolo-lime p-4 shadow-xl z-50">
-          <p className="font-bold text-yolo-lime font-mono mb-2">{payload[0].payload.label}</p>
-          <p className="text-xs text-white">{t.stats.riskLabel}: {payload[0].value}%</p>
-          <p className="text-xs text-white">{t.stats.regretLabel}: {payload[1].value}%</p>
+        <div className="bg-yolo-black border border-yolo-lime p-3 sm:p-4 shadow-xl z-50 max-w-[200px] sm:max-w-none">
+          <p className="font-bold text-yolo-lime font-mono mb-1.5 sm:mb-2 text-sm sm:text-base">{payload[0].payload.label}</p>
+          <p className="text-[10px] sm:text-xs text-white">{t.stats.riskLabel}: {payload[0].value}%</p>
+          <p className="text-[10px] sm:text-xs text-white">{t.stats.regretLabel}: {payload[1].value}%</p>
         </div>
       );
     }
@@ -125,7 +130,7 @@ const RegretChart: React.FC = () => {
   };
 
   return (
-    <div className="w-full flex flex-col items-center justify-center p-4 min-h-[500px]">
+    <div className="w-full flex flex-col items-center justify-center p-3 sm:p-4 min-h-[400px] sm:min-h-[500px]">
       <style>
         {`
           @keyframes pointEnter {
@@ -139,43 +144,45 @@ const RegretChart: React.FC = () => {
         `}
       </style>
 
-      <div className="mb-8 text-center">
-        <h2 className="text-2xl md:text-3xl font-bold font-mono text-yolo-pink mb-2">
+      <div className="mb-6 sm:mb-8 text-center">
+        <h2 className="text-xl sm:text-2xl md:text-3xl font-bold font-mono text-yolo-pink mb-1.5 sm:mb-2">
           {t.stats.title}
         </h2>
-        <p className="text-xs text-gray-500 uppercase tracking-widest">
+        <p className="text-[10px] sm:text-xs text-gray-500 uppercase tracking-widest">
           {t.stats.subtitle}
         </p>
       </div>
-      
-      <div className="w-full max-w-5xl h-[50vh] min-h-[300px] md:h-[500px] bg-yolo-gray/20 border border-yolo-gray/50 rounded-lg p-4 relative overflow-hidden">
+
+      <div className="w-full max-w-5xl h-[45vh] sm:h-[50vh] min-h-[250px] sm:min-h-[300px] md:h-[500px] bg-yolo-gray/20 border border-yolo-gray/50 rounded-lg p-2 sm:p-4 relative overflow-hidden">
         {/* Decorative background grid lines */}
-        <div className="absolute inset-0 pointer-events-none opacity-10" 
+        <div className="absolute inset-0 pointer-events-none opacity-10"
              style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '20px 20px' }}></div>
 
         <ResponsiveContainer width="100%" height="100%">
-          <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
+          <ScatterChart margin={{ top: 20, right: 10, bottom: 20, left: 10 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-            <XAxis 
-              type="number" 
-              dataKey="x" 
-              name="Risk" 
-              stroke="#666" 
-              label={{ value: t.stats.riskLabel + ' →', position: 'bottom', fill: '#666', fontSize: 12 }} 
+            <XAxis
+              type="number"
+              dataKey="x"
+              name="Risk"
+              stroke="#666"
+              tick={{ fontSize: 10 }}
+              label={{ value: t.stats.riskLabel + ' →', position: 'bottom', fill: '#666', fontSize: 10 }}
             />
-            <YAxis 
-              type="number" 
-              dataKey="y" 
-              name="Regret" 
-              stroke="#666" 
-              label={{ value: t.stats.regretLabel + ' →', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 12 }} 
+            <YAxis
+              type="number"
+              dataKey="y"
+              name="Regret"
+              stroke="#666"
+              tick={{ fontSize: 10 }}
+              label={{ value: t.stats.regretLabel + ' →', angle: -90, position: 'insideLeft', fill: '#666', fontSize: 10 }}
             />
             <Tooltip content={<CustomTooltip />} cursor={{ strokeDasharray: '3 3' }} />
             <ReferenceLine y={50} stroke="#ccff00" strokeDasharray="3 3" opacity={0.3} />
             <ReferenceLine x={50} stroke="#ccff00" strokeDasharray="3 3" opacity={0.3} />
-            <Scatter 
-                name="Activities" 
-                data={data} 
+            <Scatter
+                name="Activities"
+                data={data}
                 shape={<CustomScatterPoint />}
                 isAnimationActive={false} // Disable default animation to use our custom one
             >
@@ -186,7 +193,7 @@ const RegretChart: React.FC = () => {
           </ScatterChart>
         </ResponsiveContainer>
       </div>
-      <p className="mt-4 text-yolo-gray font-mono text-xs text-center max-w-md">
+      <p className="mt-3 sm:mt-4 text-yolo-gray font-mono text-[10px] sm:text-xs text-center max-w-md px-2">
         {t.stats.disclaimer}
       </p>
     </div>

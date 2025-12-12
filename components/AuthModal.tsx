@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, User, Mail, Lock, Zap } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useLanguage } from '../contexts/LanguageContext';
@@ -40,13 +41,24 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
     signUp: 'Sign up', signIn: 'Sign in', welcome: 'WELCOME BACK', joinUs: 'JOIN THE CHAOS'
   };
 
+  // 锁定 body 滚动
+  useEffect(() => {
+    if (isOpen) {
+      const originalStyle = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = originalStyle;
+      };
+    }
+  }, [isOpen]);
+
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setLoading(true);
-    
+
     try {
       if (mode === 'login') {
         await login(email, password);
@@ -61,22 +73,25 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
     }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/90" onClick={onClose}>
-      <div 
-        className="w-full max-w-md bg-[#0a0a0a] border-2 border-yolo-white relative animate-in zoom-in duration-200"
+  return createPortal(
+    <div
+      className="fixed inset-0 z-[10001] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm"
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md bg-[#121212] rounded-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-200"
         onClick={e => e.stopPropagation()}
       >
         {/* 关闭按钮 */}
-        <button 
+        <button
           onClick={onClose}
-          className="absolute -top-3 -right-3 w-10 h-10 bg-yolo-pink text-black flex items-center justify-center hover:bg-white transition-colors z-10"
+          className="absolute top-4 right-4 w-10 h-10 bg-yolo-pink text-black flex items-center justify-center rounded-full hover:bg-white active:scale-95 transition-all z-10"
         >
           <X className="w-5 h-5" />
         </button>
 
         {/* 标题 */}
-        <div className="bg-yolo-lime text-black p-4 text-center">
+        <div className="bg-yolo-lime text-black p-5 text-center relative">
           <h2 className="text-2xl font-black uppercase tracking-wider">
             {mode === 'login' ? t.welcome : t.joinUs}
           </h2>
@@ -85,39 +100,41 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
         {/* 表单 */}
         <form onSubmit={handleSubmit} className="p-6 space-y-4">
           {error && (
-            <div className="bg-red-500/20 border border-red-500 text-red-400 px-4 py-2 text-sm font-mono">
+            <div className="bg-red-500/20 border border-red-500/50 text-red-400 px-4 py-3 text-sm font-mono rounded-lg">
               {error}
             </div>
           )}
 
           {mode === 'register' && (
             <div className="relative">
-              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-yolo-gray" />
+              <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
               <input
                 type="text"
                 value={username}
                 onChange={e => setUsername(e.target.value)}
                 placeholder={t.username}
                 required
-                className="w-full bg-black border-2 border-yolo-gray focus:border-yolo-lime text-white pl-12 pr-4 py-3 font-mono uppercase focus:outline-none transition-colors"
+                autoComplete="username"
+                className="w-full bg-white/5 border border-white/10 focus:border-yolo-lime text-white pl-12 pr-4 py-3.5 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-yolo-lime/30 transition-all"
               />
             </div>
           )}
 
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-yolo-gray" />
+            <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
               type="email"
               value={email}
               onChange={e => setEmail(e.target.value)}
               placeholder={t.email}
               required
-              className="w-full bg-black border-2 border-yolo-gray focus:border-yolo-lime text-white pl-12 pr-4 py-3 font-mono focus:outline-none transition-colors"
+              autoComplete="email"
+              className="w-full bg-white/5 border border-white/10 focus:border-yolo-lime text-white pl-12 pr-4 py-3.5 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-yolo-lime/30 transition-all"
             />
           </div>
 
           <div className="relative">
-            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-yolo-gray" />
+            <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-white/40" />
             <input
               type="password"
               value={password}
@@ -125,32 +142,34 @@ const AuthModal: React.FC<Props> = ({ isOpen, onClose }) => {
               placeholder={t.password}
               required
               minLength={6}
-              className="w-full bg-black border-2 border-yolo-gray focus:border-yolo-lime text-white pl-12 pr-4 py-3 font-mono focus:outline-none transition-colors"
+              autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+              className="w-full bg-white/5 border border-white/10 focus:border-yolo-lime text-white pl-12 pr-4 py-3.5 rounded-xl font-mono focus:outline-none focus:ring-2 focus:ring-yolo-lime/30 transition-all"
             />
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full py-4 bg-yolo-lime text-black font-black uppercase tracking-wider hover:bg-yolo-pink transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            className="w-full py-4 bg-yolo-lime text-black font-black uppercase tracking-wider rounded-xl hover:bg-yolo-pink active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Zap className="w-5 h-5" />
             {loading ? '...' : mode === 'login' ? t.login : t.register}
           </button>
 
-          <div className="text-center text-yolo-gray text-sm font-mono">
+          <div className="text-center text-white/50 text-sm font-mono pt-2">
             {mode === 'login' ? t.noAccount : t.hasAccount}{' '}
             <button
               type="button"
               onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-              className="text-yolo-lime hover:text-yolo-pink transition-colors"
+              className="text-yolo-pink hover:text-yolo-lime transition-colors font-bold"
             >
               {mode === 'login' ? t.signUp : t.signIn}
             </button>
           </div>
         </form>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

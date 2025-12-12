@@ -18,6 +18,9 @@ export interface User {
   bio?: string;
   likes?: number;
   stats?: { total: number; completed: number; likes: number };
+  following_count?: number;
+  followers_count?: number;
+  is_following?: boolean;
 }
 
 export interface Challenge {
@@ -35,7 +38,7 @@ export interface Challenge {
   like_count?: number;
   comment_count?: number;
   liked_by_me?: boolean;
-  user?: { id?: string; username: string; nickname?: string; avatar?: string; likes?: number };
+  user?: { id?: string; username: string; nickname?: string; avatar?: string; likes?: number; is_following?: boolean };
 }
 
 export interface Comment {
@@ -264,4 +267,55 @@ export function formatLikesCount(num: number): string {
     return `${Math.floor(num / 100) * 100}+`;
   }
   return String(num);
+}
+
+// 跟随相关接口
+export interface FollowUser {
+  id: string;
+  username: string;
+  nickname?: string;
+  avatar?: string;
+  bio?: string;
+  is_following?: boolean;
+}
+
+// 跟随/取消跟随用户
+export async function toggleFollow(userId: string): Promise<{ following: boolean; followers_count: number }> {
+  const res = await authFetch(`/api/users/${userId}/follow`, { method: 'POST' });
+  if (!res.ok) {
+    const err = await res.json();
+    throw new Error(err.error || 'Failed to toggle follow');
+  }
+  return res.json();
+}
+
+// 获取我跟随的用户列表
+export async function getFollowing(): Promise<FollowUser[]> {
+  const res = await authFetch('/api/users/following');
+  if (!res.ok) return [];
+  return res.json();
+}
+
+// 获取跟随我的用户列表
+export async function getFollowers(): Promise<FollowUser[]> {
+  const res = await authFetch('/api/users/followers');
+  if (!res.ok) return [];
+  return res.json();
+}
+
+// 获取用户公开资料
+export async function getUserProfile(userId: string): Promise<User | null> {
+  const token = getToken();
+  const headers: Record<string, string> = {};
+  if (token) headers['Authorization'] = `Bearer ${token}`;
+  const res = await fetch(`${API_BASE}/api/users/${userId}/profile`, { headers });
+  if (!res.ok) return null;
+  return res.json();
+}
+
+// 获取用户的已完成挑战
+export async function getUserChallenges(userId: string): Promise<Challenge[]> {
+  const res = await fetch(`${API_BASE}/api/users/${userId}/challenges`);
+  if (!res.ok) return [];
+  return res.json();
 }

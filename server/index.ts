@@ -11,7 +11,8 @@ import {
   createChallenge, getChallengeById, getUserChallenges, getActiveChallenge,
   completeChallenge, getCompletedChallenges, getUserStats, getChallengeWithDetails,
   addComment, getComments, toggleLike, checkIn, hasCheckedInToday, getUserLikes,
-  deleteChallenge
+  deleteChallenge, toggleFollow, getFollowing, getFollowers, getUserPublicProfile,
+  getUserCompletedChallenges, getFollowingCount, getFollowersCount
 } from './db';
 
 dotenv.config({ path: '.env.local' });
@@ -132,7 +133,9 @@ app.get('/api/auth/me', authMiddleware as any, (req: AuthRequest, res) => {
   const user = getUserById(req.userId!);
   if (!user) return res.status(404).json({ error: 'User not found' });
   const stats = getUserStats(req.userId!);
-  res.json({ ...user, stats });
+  const followingCount = getFollowingCount(req.userId!);
+  const followersCount = getFollowersCount(req.userId!);
+  res.json({ ...user, stats, following_count: followingCount, followers_count: followersCount });
 });
 
 // 更新用户资料
@@ -370,6 +373,51 @@ app.delete('/api/challenges/:id', authMiddleware as any, (req: AuthRequest, res)
     return res.status(404).json({ error: 'Challenge not found or not yours' });
   }
   res.json({ success: true, deducted: result.deducted });
+});
+
+// ========== 用户关系 API ==========
+
+// 跟随/取消跟随用户
+app.post('/api/users/:id/follow', authMiddleware as any, (req: AuthRequest, res) => {
+  const targetUserId = req.params.id;
+  if (targetUserId === req.userId) {
+    return res.status(400).json({ error: 'Cannot follow yourself' });
+  }
+  const result = toggleFollow(req.userId!, targetUserId);
+  res.json(result);
+});
+
+// 获取我跟随的用户列表
+app.get('/api/users/following', authMiddleware as any, (req: AuthRequest, res) => {
+  const following = getFollowing(req.userId!);
+  res.json(following);
+});
+
+// 获取跟随我的用户列表
+app.get('/api/users/followers', authMiddleware as any, (req: AuthRequest, res) => {
+  const followers = getFollowers(req.userId!, req.userId);
+  res.json(followers);
+});
+
+// 获取用户公开资料
+app.get('/api/users/:id/profile', (req: AuthRequest, res) => {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  let currentUserId: string | undefined;
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET) as { userId: string };
+      currentUserId = decoded.userId;
+    } catch {}
+  }
+  const profile = getUserPublicProfile(req.params.id, currentUserId);
+  if (!profile) return res.status(404).json({ error: 'User not found' });
+  res.json(profile);
+});
+
+// 获取用户已完成的挑战
+app.get('/api/users/:id/challenges', (_req, res) => {
+  const challenges = getUserCompletedChallenges(_req.params.id);
+  res.json(challenges);
 });
 
 // 健康检查

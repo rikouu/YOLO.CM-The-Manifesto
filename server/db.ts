@@ -9,6 +9,7 @@ const CHALLENGES_FILE = path.join(DATA_DIR, 'challenges.json');
 const COMMENTS_FILE = path.join(DATA_DIR, 'comments.json');
 const LIKES_FILE = path.join(DATA_DIR, 'likes.json');
 const CHECKINS_FILE = path.join(DATA_DIR, 'checkins.json');
+const FOLLOWS_FILE = path.join(DATA_DIR, 'follows.json');
 
 // 确保数据目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -20,6 +21,7 @@ initFile(CHALLENGES_FILE);
 initFile(COMMENTS_FILE);
 initFile(LIKES_FILE);
 initFile(CHECKINS_FILE);
+initFile(FOLLOWS_FILE);
 
 export interface User {
   id: string;
@@ -67,6 +69,13 @@ export interface CheckIn {
   date: string; // YYYY-MM-DD
 }
 
+export interface Follow {
+  id: string;
+  follower_id: string; // 跟随者
+  following_id: string; // 被跟随者
+  created_at: string;
+}
+
 // 读写函数
 function readJSON<T>(file: string): T[] {
   return JSON.parse(fs.readFileSync(file, 'utf-8'));
@@ -85,6 +94,8 @@ const readLikes = () => readJSON<Like>(LIKES_FILE);
 const writeLikes = (d: Like[]) => writeJSON(LIKES_FILE, d);
 const readCheckIns = () => readJSON<CheckIn>(CHECKINS_FILE);
 const writeCheckIns = (d: CheckIn[]) => writeJSON(CHECKINS_FILE, d);
+const readFollows = () => readJSON<Follow>(FOLLOWS_FILE);
+const writeFollows = (d: Follow[]) => writeJSON(FOLLOWS_FILE, d);
 
 // ========== 用户 ==========
 export function createUser(username: string, email: string, password: string): User {
@@ -245,8 +256,8 @@ export function getCompletedChallenges(limit = 50, offset = 0): (Challenge & { u
   });
 }
 
-export function getChallengeWithDetails(id: string, currentUserId?: string): (Challenge & { 
-  user?: Partial<User>; like_count: number; comment_count: number; liked_by_me: boolean 
+export function getChallengeWithDetails(id: string, currentUserId?: string): (Challenge & {
+  user?: Partial<User> & { is_following?: boolean }; like_count: number; comment_count: number; liked_by_me: boolean
 }) | null {
   const challenge = getChallengeById(id);
   if (!challenge) return null;
@@ -261,7 +272,13 @@ export function getChallengeWithDetails(id: string, currentUserId?: string): (Ch
     like_count: challengeLikes.length,
     comment_count: challengeComments.length,
     liked_by_me: currentUserId ? challengeLikes.some(l => l.user_id === currentUserId) : false,
-    user: user ? { id: user.id, username: user.username, nickname: user.nickname, avatar: user.avatar } : undefined
+    user: user ? {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      is_following: currentUserId ? isFollowing(currentUserId, user.id) : false
+    } : undefined
   };
 }
 
@@ -354,4 +371,118 @@ export function checkIn(userId: string): { success: boolean; likes: number; mess
 export function hasCheckedInToday(userId: string): boolean {
   const today = new Date().toISOString().split('T')[0];
   return readCheckIns().some(c => c.user_id === userId && c.date === today);
+}
+
+// ========== 跟随 ==========
+export function toggleFollow(followerId: string, followingId: string): { following: boolean; followers_count: number } {
+  if (followerId === followingId) {
+    // 不能跟随自己
+    return { following: false, followers_count: getFollowersCount(followingId) };
+  }
+
+  const follows = readFollows();
+  const existingIndex = follows.findIndex(f => f.follower_id === followerId && f.following_id === followingId);
+
+  if (existingIndex >= 0) {
+    // 取消跟随
+    follows.splice(existingIndex, 1);
+    writeFollows(follows);
+    return { following: false, followers_count: follows.filter(f => f.following_id === followingId).length };
+  } else {
+    // 添加跟随
+    follows.push({
+      id: uuidv4(),
+      follower_id: followerId,
+      following_id: followingId,
+      created_at: new Date().toISOString()
+    });
+    writeFollows(follows);
+    return { following: true, followers_count: follows.filter(f => f.following_id === followingId).length };
+  }
+}
+
+export function isFollowing(followerId: string, followingId: string): boolean {
+  return readFollows().some(f => f.follower_id === followerId && f.following_id === followingId);
+}
+
+export function getFollowersCount(userId: string): number {
+  return readFollows().filter(f => f.following_id === userId).length;
+}
+
+export function getFollowingCount(userId: string): number {
+  return readFollows().filter(f => f.follower_id === userId).length;
+}
+
+// 获取我跟随的用户列表
+export function getFollowing(userId: string): (Partial<User> & { is_following: boolean })[] {
+  const follows = readFollows().filter(f => f.follower_id === userId);
+  const users = readUsers();
+  return follows.map(f => {
+    const user = users.find(u => u.id === f.following_id);
+    if (!user) return null;
+    return {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      bio: user.bio,
+      is_following: true
+    };
+  }).filter(Boolean) as (Partial<User> & { is_following: boolean })[];
+}
+
+// 获取跟随我的用户列表
+export function getFollowers(userId: string, currentUserId?: string): (Partial<User> & { is_following: boolean })[] {
+  const follows = readFollows();
+  const followerIds = follows.filter(f => f.following_id === userId).map(f => f.follower_id);
+  const users = readUsers();
+  return followerIds.map(fid => {
+    const user = users.find(u => u.id === fid);
+    if (!user) return null;
+    return {
+      id: user.id,
+      username: user.username,
+      nickname: user.nickname,
+      avatar: user.avatar,
+      bio: user.bio,
+      is_following: currentUserId ? isFollowing(currentUserId, user.id) : false
+    };
+  }).filter(Boolean) as (Partial<User> & { is_following: boolean })[];
+}
+
+// 获取用户公开资料
+export function getUserPublicProfile(userId: string, currentUserId?: string): (Partial<User> & {
+  followers_count: number;
+  following_count: number;
+  is_following: boolean;
+}) | null {
+  const user = readUsers().find(u => u.id === userId);
+  if (!user) return null;
+  return {
+    id: user.id,
+    username: user.username,
+    nickname: user.nickname,
+    avatar: user.avatar,
+    bio: user.bio,
+    likes: user.likes,
+    followers_count: getFollowersCount(userId),
+    following_count: getFollowingCount(userId),
+    is_following: currentUserId ? isFollowing(currentUserId, userId) : false
+  };
+}
+
+// 获取用户已完成的挑战（公开）
+export function getUserCompletedChallenges(userId: string): (Challenge & { like_count?: number; comment_count?: number })[] {
+  const challenges = readChallenges();
+  const likes = readLikes();
+  const comments = readComments();
+
+  return challenges
+    .filter(c => c.user_id === userId && c.status === 'completed')
+    .sort((a, b) => new Date(b.completed_at || b.created_at).getTime() - new Date(a.completed_at || a.created_at).getTime())
+    .map(c => ({
+      ...c,
+      like_count: likes.filter(l => l.challenge_id === c.id).length,
+      comment_count: comments.filter(cm => cm.challenge_id === c.id).length
+    }));
 }
