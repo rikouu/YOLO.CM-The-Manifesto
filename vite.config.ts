@@ -7,7 +7,7 @@ export default defineConfig(({ mode }) => {
 
   return {
     server: {
-      port: 3001,
+      port: parseInt(env.VITE_DEV_PORT || '3001'),
       host: '0.0.0.0',
       // 开发环境代理 API 请求到后端
       // 只有当 VITE_API_URL 为空时才启用代理（本地开发模式）
