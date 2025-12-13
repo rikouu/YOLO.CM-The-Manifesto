@@ -10,8 +10,9 @@
 - 🪙 **YOLO 硬币** - 按住蓄力投掷硬币决定命运
 - 👤 **用户系统** - 注册登录、个人资料、挑战记录
 - ❤️ **心心系统** - 签到获得、点赞消耗、完成挑战奖励
-- 🏆 **挑战墙** - 展示所有用户完成的挑战
+- 🏆 **挑战墙** - 展示所有用户完成的挑战（小红书风格）
 - 💬 **互动功能** - 点赞、评论、emoji 表情
+- 👥 **社交系统** - 关注/粉丝、用户主页、社交网络
 - 🌍 **多语言** - 支持中文、英文、日文
 
 ## 🛠️ 技术栈
@@ -21,6 +22,7 @@
 - Vite
 - TailwindCSS
 - Lucide Icons
+- React Portal（弹窗）
 
 **后端:**
 - Node.js + Express
@@ -40,9 +42,10 @@
 yolo.cm/
 ├── components/          # React 组件
 │   ├── DareGenerator.tsx   # 挑战生成器
-│   ├── ChallengeWall.tsx   # 挑战墙
-│   ├── ChallengeModal.tsx  # 挑战详情弹窗
-│   ├── Profile.tsx         # 用户资料
+│   ├── ChallengeWall.tsx   # 挑战墙（瀑布流）
+│   ├── ChallengeModal.tsx  # 挑战详情弹窗（小红书风格）
+│   ├── Profile.tsx         # 用户资料（含关注/粉丝）
+│   ├── UserProfileModal.tsx # 他人主页弹窗
 │   ├── YoloCoin.tsx        # 硬币投掷
 │   └── ...
 ├── contexts/            # React Context
@@ -51,6 +54,12 @@ yolo.cm/
 │   ├── index.ts            # Express 入口
 │   ├── db.ts               # JSON 数据存储
 │   └── data/               # 数据文件目录
+│       ├── users.json
+│       ├── challenges.json
+│       ├── comments.json
+│       ├── likes.json
+│       ├── checkins.json
+│       └── follows.json    # 关注关系
 ├── gemini-proxy-server/ # Gemini API 代理
 └── cloudflare-worker/   # Cloudflare Worker 代理
 ```
@@ -75,8 +84,14 @@ npm install
 
 **前端 `.env.local`:**
 ```env
-# API 地址（留空则使用相对路径，通过 Vite 代理转发）
+# API 地址配置
+# 本地开发: 留空，使用 Vite proxy 代理到 VITE_PROXY_TARGET
+# 生产环境: 设置为实际后端地址，如 https://yolo.cm
 VITE_API_URL=
+
+# 代理目标（仅本地开发时使用）
+VITE_PROXY_TARGET=http://localhost:4002
+
 # 静态资源地址（本地开发时指向生产服务器获取图片）
 VITE_ASSET_URL=https://yolo.cm
 ```
@@ -85,7 +100,7 @@ VITE_ASSET_URL=https://yolo.cm
 ```env
 GEMINI_API_KEY=your_gemini_api_key
 GEMINI_PROXY_URL=http://your-proxy-server:8787
-PORT=6001
+PORT=4002
 JWT_SECRET=your_random_secret_key
 ```
 
@@ -97,25 +112,26 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 ### 3. 启动开发服务器
 
 ```bash
-# 终端 1 - 前端
+# 终端 1 - 前端（端口 3001）
 npm run dev
 
-# 终端 2 - 后端
+# 终端 2 - 后端（端口 4002）
 cd server
 npm start
 ```
 
-### 4. 配置 Vite 代理
+### 4. Vite 代理配置说明
 
-`vite.config.ts` 已配置代理，本地开发时 API 请求会转发到生产服务器：
+`vite.config.ts` 使用智能代理配置：
+
+- **本地开发**（`VITE_API_URL` 为空）：启用 proxy，请求代理到 `VITE_PROXY_TARGET`
+- **生产环境**（`VITE_API_URL` 有值）：禁用 proxy，直接请求指定 URL
 
 ```typescript
-proxy: {
-  '/api': {
-    target: 'https://yolo.cm',
-    changeOrigin: true,
-  }
-}
+proxy: !env.VITE_API_URL ? {
+  '/api': { target: env.VITE_PROXY_TARGET || 'http://localhost:4002' },
+  '/uploads': { target: env.VITE_PROXY_TARGET || 'http://localhost:4002' }
+} : undefined
 ```
 
 ---
@@ -183,7 +199,7 @@ server {
 
     # API 代理
     location /api {
-        proxy_pass http://127.0.0.1:6001;
+        proxy_pass http://127.0.0.1:4002;
         proxy_http_version 1.1;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -217,14 +233,14 @@ COPY server/.env.local ./
 # 创建数据目录
 RUN mkdir -p data uploads
 
-EXPOSE 6001
+EXPOSE 4002
 
 CMD ["node", "index.js"]
 ```
 
 ```bash
 docker build -t yolo-api .
-docker run -d -p 6001:6001 -v ./data:/app/data -v ./uploads:/app/uploads yolo-api
+docker run -d -p 4002:4002 -v ./data:/app/data -v ./uploads:/app/uploads yolo-api
 ```
 
 ### 方式三：Vercel 部署（仅前端）
@@ -280,6 +296,25 @@ GEMINI_PROXY_URL=https://your-worker.workers.dev
 
 ---
 
+## 👥 社交系统说明
+
+### 关注功能
+- 点击用户头像/名称可查看用户主页
+- 支持关注/取消关注
+- 个人资料页显示关注数和粉丝数
+- 可在 Profile 页面的标签页中查看关注列表和粉丝列表
+
+### API 端点
+| 端点 | 方法 | 说明 |
+|------|------|------|
+| `/api/users/:id/follow` | POST | 关注/取消关注用户 |
+| `/api/users/following` | GET | 获取我关注的用户列表 |
+| `/api/users/followers` | GET | 获取关注我的用户列表 |
+| `/api/users/:id/profile` | GET | 获取用户公开资料 |
+| `/api/users/:id/challenges` | GET | 获取用户已完成挑战 |
+
+---
+
 ## ❓ 常见问题
 
 ### Q: Gemini API 报错 `ECONNREFUSED`
@@ -327,7 +362,7 @@ npm start  # 使用 tsx 直接运行
 ```
 
 ### Q: 跨域错误 (CORS)
-**A:** 
+**A:**
 - 本地开发：使用 Vite 代理，不要直接调用生产 API
 - 生产环境：后端已配置 `cors()` 中间件
 
