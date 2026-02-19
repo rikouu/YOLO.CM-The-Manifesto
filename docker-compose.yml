@@ -1,0 +1,33 @@
+services:
+  server:
+    build:
+      context: ./server
+    container_name: yolo-server
+    restart: unless-stopped
+    volumes:
+      - ./server/data:/app/data
+      - ./server/uploads:/app/uploads
+    env_file:
+      - server/.env
+    environment:
+      - TZ=${TZ:-Asia/Tokyo}
+    networks:
+      - yolo-net
+
+  web:
+    build:
+      context: .
+      args:
+        VITE_API_URL: ""   # 空字符串 = 同域名，nginx反代
+    container_name: yolo-web
+    restart: unless-stopped
+    ports:
+      - "${PORT:-8910}:80"
+    depends_on:
+      - server
+    networks:
+      - yolo-net
+
+networks:
+  yolo-net:
+    driver: bridge

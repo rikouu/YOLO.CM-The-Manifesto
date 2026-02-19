@@ -10,6 +10,7 @@ const COMMENTS_FILE = path.join(DATA_DIR, 'comments.json');
 const LIKES_FILE = path.join(DATA_DIR, 'likes.json');
 const CHECKINS_FILE = path.join(DATA_DIR, 'checkins.json');
 const FOLLOWS_FILE = path.join(DATA_DIR, 'follows.json');
+const AI_USAGE_FILE = path.join(DATA_DIR, 'ai_usage.json');
 
 // 确保数据目录存在
 if (!fs.existsSync(DATA_DIR)) fs.mkdirSync(DATA_DIR, { recursive: true });
@@ -22,6 +23,9 @@ initFile(COMMENTS_FILE);
 initFile(LIKES_FILE);
 initFile(CHECKINS_FILE);
 initFile(FOLLOWS_FILE);
+initFile(AI_USAGE_FILE);
+
+export const DEFAULT_DAILY_AI_LIMIT = 24;
 
 export interface User {
   id: string;
@@ -31,8 +35,16 @@ export interface User {
   nickname?: string;
   avatar?: string;
   bio?: string;
-  likes: number; // 持有的赞数量
+  likes: number;
+  is_admin?: boolean;
+  ai_daily_limit?: number; // 自定义限额，未设置则用DEFAULT_DAILY_AI_LIMIT
   created_at: string;
+}
+
+export interface AIUsage {
+  user_id: string;
+  date: string; // YYYY-MM-DD
+  count: number;
 }
 
 export interface Challenge {
@@ -485,4 +497,64 @@ export function getUserCompletedChallenges(userId: string): (Challenge & { like_
       like_count: likes.filter(l => l.challenge_id === c.id).length,
       comment_count: comments.filter(cm => cm.challenge_id === c.id).length
     }));
+}
+
+// ========== AI 每日生成限额 ==========
+const readAIUsage = () => readJSON<AIUsage>(AI_USAGE_FILE);
+const writeAIUsage = (d: AIUsage[]) => writeJSON(AI_USAGE_FILE, d);
+
+function getTodayStr(): string {
+  return new Date().toISOString().split('T')[0];
+}
+
+export function getAIUsageToday(userId: string): { count: number; limit: number; remaining: number } {
+  const today = getTodayStr();
+  const usage = readAIUsage().find(u => u.user_id === userId && u.date === today);
+  const users = readUsers();
+  const user = users.find(u => u.id === userId);
+  const limit = user?.ai_daily_limit ?? DEFAULT_DAILY_AI_LIMIT;
+  const count = usage?.count ?? 0;
+  return { count, limit, remaining: Math.max(0, limit - count) };
+}
+
+export function incrementAIUsage(userId: string): { count: number; limit: number; remaining: number } {
+  const today = getTodayStr();
+  const usages = readAIUsage();
+  const index = usages.findIndex(u => u.user_id === userId && u.date === today);
+  if (index >= 0) {
+    usages[index].count += 1;
+  } else {
+    usages.push({ user_id: userId, date: today, count: 1 });
+  }
+  writeAIUsage(usages);
+  return getAIUsageToday(userId);
+}
+
+export function setUserAILimit(userId: string, limit: number | null): User | null {
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1) return null;
+  if (limit === null) {
+    delete users[index].ai_daily_limit;
+  } else {
+    users[index].ai_daily_limit = Math.max(0, limit);
+  }
+  writeUsers(users);
+  return getUserById(userId);
+}
+
+export function setUserAdmin(userId: string, isAdmin: boolean): User | null {
+  const users = readUsers();
+  const index = users.findIndex(u => u.id === userId);
+  if (index === -1) return null;
+  users[index].is_admin = isAdmin;
+  writeUsers(users);
+  return getUserById(userId);
+}
+
+export function listAllUsers(): Partial<User>[] {
+  return readUsers().map(u => {
+    const { password, ...rest } = u;
+    return rest;
+  });
 }

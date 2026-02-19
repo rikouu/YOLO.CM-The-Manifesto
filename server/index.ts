@@ -12,7 +12,9 @@ import {
   completeChallenge, getCompletedChallenges, getUserStats, getChallengeWithDetails,
   addComment, getComments, toggleLike, checkIn, hasCheckedInToday, getUserLikes,
   deleteChallenge, toggleFollow, getFollowing, getFollowers, getUserPublicProfile,
-  getUserCompletedChallenges, getFollowingCount, getFollowersCount
+  getUserCompletedChallenges, getFollowingCount, getFollowersCount,
+  getAIUsageToday, incrementAIUsage, setUserAILimit, setUserAdmin, listAllUsers,
+  DEFAULT_DAILY_AI_LIMIT
 } from './db';
 
 dotenv.config({ path: '.env.local' });
@@ -56,10 +58,17 @@ function authMiddleware(req: AuthRequest, res: express.Response, next: express.N
   }
 }
 
+function adminMiddleware(req: AuthRequest, res: express.Response, next: express.NextFunction) {
+  const user = req.userId ? getUserById(req.userId) : null;
+  if (!user || !(user as any).is_admin) {
+    return res.status(403).json({ error: 'Admin required' });
+  }
+  next();
+}
+
 // 配置
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY!;
-const PROXY_URL = process.env.GEMINI_PROXY_URL;
-const BASE_URL = PROXY_URL || 'https://generativelanguage.googleapis.com';
+const BASE_URL = 'https://generativelanguage.googleapis.com'; // ARM在日本，直连无需代理
 
 // Fallback 数据
 const fallbacks: Record<string, { title: string; desc: string }> = {
@@ -155,9 +164,18 @@ app.post('/api/auth/avatar', authMiddleware as any, upload.single('avatar'), (re
 
 // ========== 挑战 API ==========
 
-// 生成挑战（不需要登录）
-app.post('/api/generate-challenge', async (req, res) => {
+// 生成挑战（需要登录 + 每日限额）
+app.post('/api/generate-challenge', authMiddleware as any, async (req: AuthRequest, res) => {
   try {
+    // 检查每日限额
+    const usage = getAIUsageToday(req.userId!);
+    if (usage.remaining <= 0) {
+      return res.status(429).json({
+        error: `Daily AI generation limit reached (${usage.limit}/day). Try again tomorrow.`,
+        usage
+      });
+    }
+    
     const { mood, language = 'en', environment, socialLevel } = req.body;
     if (!mood) return res.status(400).json({ error: 'mood is required' });
 
@@ -248,7 +266,8 @@ BE CREATIVE! SURPRISE ME!`;
       category: ['SOCIAL', 'PHYSICAL', 'MENTAL', 'CHAOS'].includes(parsed.category) ? parsed.category : 'CHAOS',
       estimatedTime: String(parsed.estimatedTime || parsed.estimated_time || '30 mins'),
       environment: ['indoor', 'outdoor', 'online'].includes(parsed.environment) ? parsed.environment : 'outdoor',
-      socialLevel: ['solo', 'one-on-one', 'strangers', 'group'].includes(parsed.socialLevel) ? parsed.socialLevel : 'solo'
+      socialLevel: ['solo', 'one-on-one', 'strangers', 'group'].includes(parsed.socialLevel) ? parsed.socialLevel : 'solo',
+      usage: incrementAIUsage(req.userId!)
     });
   } catch (error) {
     console.error("Gemini API Error:", error);
@@ -373,6 +392,37 @@ app.delete('/api/challenges/:id', authMiddleware as any, (req: AuthRequest, res)
     return res.status(404).json({ error: 'Challenge not found or not yours' });
   }
   res.json({ success: true, deducted: result.deducted });
+});
+
+// ========== AI 使用量 API ==========
+
+// 获取当前用户AI使用情况
+app.get('/api/ai/usage', authMiddleware as any, (req: AuthRequest, res) => {
+  const usage = getAIUsageToday(req.userId!);
+  res.json(usage);
+});
+
+// ========== 管理员 API ==========
+
+// 列出所有用户
+app.get('/api/admin/users', authMiddleware as any, adminMiddleware as any, (_req, res) => {
+  res.json(listAllUsers());
+});
+
+// 设置用户每日AI生成限额（null = 恢复默认）
+app.put('/api/admin/users/:id/ai-limit', authMiddleware as any, adminMiddleware as any, (req, res) => {
+  const { limit } = req.body; // number or null
+  const user = setUserAILimit(req.params.id, limit === null ? null : Number(limit));
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json({ user, message: `AI daily limit set to ${limit ?? DEFAULT_DAILY_AI_LIMIT} (default: ${DEFAULT_DAILY_AI_LIMIT})` });
+});
+
+// 设置/取消管理员权限
+app.put('/api/admin/users/:id/admin', authMiddleware as any, adminMiddleware as any, (req, res) => {
+  const { is_admin } = req.body;
+  const user = setUserAdmin(req.params.id, Boolean(is_admin));
+  if (!user) return res.status(404).json({ error: 'User not found' });
+  res.json(user);
 });
 
 // ========== 用户关系 API ==========
