@@ -1,7 +1,7 @@
 {
   "name": "yolo-api-server",
   "version": "1.0.0",
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
     "start": "tsx watch index.ts",
     "build": "tsc",
