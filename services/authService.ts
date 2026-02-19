@@ -319,3 +319,17 @@ export async function getUserChallenges(userId: string): Promise<Challenge[]> {
   if (!res.ok) return [];
   return res.json();
 }
+
+export async function getAIUsage(): Promise<{ count: number; limit: number; remaining: number } | null> {
+  const token = getToken();
+  if (!token) return null;
+  try {
+    const res = await fetch(`${API_BASE}/api/ai/usage`, {
+      headers: { 'Authorization': `Bearer ${token}` },
+    });
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}

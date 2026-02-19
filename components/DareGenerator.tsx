@@ -5,7 +5,7 @@ import { RefreshCw, Zap, Clock, Skull, Download, Trophy, ArrowRight, Binary, X, 
 import { useLanguage } from '../contexts/LanguageContext';
 import { useAuth } from '../contexts/AuthContext';
 import { soundManager } from '../services/soundService';
-import { acceptChallenge, getActiveChallenge, completeChallenge, Challenge as DBChallenge } from '../services/authService';
+import { acceptChallenge, getActiveChallenge, completeChallenge, Challenge as DBChallenge, getAIUsage } from '../services/authService';
 import { useToast } from './Toast';
 import AuthModal from './AuthModal';
 
@@ -26,6 +26,7 @@ const DareGenerator: React.FC = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [environment, setEnvironment] = useState<Environment>('any');
   const [socialLevel, setSocialLevel] = useState<SocialLevel>('any');
+  const [aiUsage, setAiUsage] = useState<{ count: number; limit: number; remaining: number } | null>(null);
   const { t, language } = useLanguage();
   const { user } = useAuth();
   const { showToast } = useToast();
@@ -36,6 +37,9 @@ const DareGenerator: React.FC = () => {
       getActiveChallenge().then(c => {
         if (c) setActiveChallenge(c);
       });
+      getAIUsage().then(u => setAiUsage(u));
+    } else {
+      setAiUsage(null);
     }
   }, [user]);
 
@@ -87,9 +91,18 @@ const DareGenerator: React.FC = () => {
         socialLevel
       });
       setChallenge(result);
+      if (result.usage) setAiUsage(result.usage);
       soundManager.playSuccess();
-    } catch (e) {
-      console.error(e);
+    } catch (e: any) {
+      if (e?.message === 'LOGIN_REQUIRED') {
+        setShowAuthModal(true);
+        showToast(language === 'zh' ? '请先登录再生成挑战' : language === 'ja' ? 'ログインしてからチャレンジを生成してください' : 'Please log in to generate challenges', 'error');
+      } else if (e?.message === 'LIMIT_REACHED') {
+        showToast(language === 'zh' ? '今日AI生成次数已用完' : language === 'ja' ? '本日のAI生成回数を使い切りました' : 'Daily AI generation limit reached', 'error');
+      } else {
+        console.error(e);
+        showToast(language === 'zh' ? '生成失败，请重试' : language === 'ja' ? '生成に失敗しました' : 'Generation failed, please retry', 'error');
+      }
     } finally {
       setLoading(false);
     }
@@ -552,6 +565,19 @@ const DareGenerator: React.FC = () => {
 
       {!challenge && !loading && !completed && !activeChallenge && (
         <div className="w-full space-y-4 sm:space-y-6">
+          {/* AI 剩余次数 */}
+          {user && aiUsage && (
+            <div className="flex justify-center">
+              <div className="flex items-center gap-2 px-3 py-1.5 border border-yolo-gray/50 rounded-full font-mono text-[10px] sm:text-xs text-yolo-gray">
+                <Zap className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yolo-lime" />
+                <span>
+                  {language === 'zh' ? `今日剩余 ${aiUsage.remaining}/${aiUsage.limit} 次` :
+                   language === 'ja' ? `本日残り ${aiUsage.remaining}/${aiUsage.limit} 回` :
+                   `${aiUsage.remaining}/${aiUsage.limit} remaining today`}
+                </span>
+              </div>
+            </div>
+          )}
           {/* 筛选器切换按钮 */}
           <div className="flex justify-center">
             <button
