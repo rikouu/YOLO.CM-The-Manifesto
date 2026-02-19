@@ -16,7 +16,7 @@ export interface GenerateOptions {
 }
 
 export const generateYoloChallenge = async (options: GenerateOptions): Promise<Challenge & { usage?: { count: number; limit: number; remaining: number } }> => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('yolo_token');
   
   if (!token) {
     throw new Error('LOGIN_REQUIRED');
