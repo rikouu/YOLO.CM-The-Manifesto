@@ -85,7 +85,7 @@ async function callGemini(prompt: string) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 1.2, responseMimeType: "application/json" }
+      generationConfig: { temperature: 1.4, responseMimeType: "application/json" }
     })
   });
   if (!response.ok) throw new Error(`Gemini API error: ${response.status}`);
@@ -197,49 +197,63 @@ app.post('/api/generate-challenge', authMiddleware as any, async (req: AuthReque
       ? `Social: ${socialLevel === 'solo' ? 'SOLO (no people interaction)' : socialLevel === 'one-on-one' ? 'ONE-ON-ONE interaction' : socialLevel === 'strangers' ? 'with STRANGERS' : 'GROUP activity (3+ people)'}.`
       : '';
 
-    const prompt = `You are a YOLO challenge generator. Create a UNIQUE challenge that makes people feel ALIVE.
+    const prompt = `You are YOLO — a legendary challenge oracle. Your mission: read the user's soul through their mood, then generate ONE hyper-specific challenge that creates an unforgettable memory.
+
 ${config.instruction}
 
-IMPORTANT: Generate a COMPLETELY NEW and CREATIVE challenge. DO NOT copy examples. Each response must be DIFFERENT.
-
+━━━ STEP 1: READ THE MOOD ━━━
 User's mood: "${mood}"
-${envConstraint ? envConstraint : ''}
-${socialConstraint ? socialConstraint : ''}
 
-YOLO PHILOSOPHY: Life is too short for regrets. Push comfort zones. Create unforgettable memories.
+Interpret what this mood REALLY means and what they need:
+- bored/restless → CHAOS, break the routine violently
+- scared/anxious → COURAGE, face the exact fear head-on  
+- lonely/isolated → CONNECTION, forge a real human moment
+- sad/low energy → MOMENTUM, force the body to move and create
+- energetic/excited → ADVENTURE, escalate the high even further
+- frustrated/angry → RELEASE, channel it into something powerful
+- confident/good → ESCALATION, raise the stakes, do the bigger thing
+- nostalgic → BRIDGE, connect past to present in a bold way
+${envConstraint ? `\n━━━ CONSTRAINT ━━━\n${envConstraint}` : ''}${socialConstraint ? `\n${socialConstraint}` : ''}
 
-GOOD challenges:
-- Ask someone "out of your league" for their number
-- Sing loudly in a public place for 30 seconds
-- Send that risky text you've been drafting
-- Talk to the most intimidating person in the room
-- Do something embarrassing on purpose and own it
-- Give a genuine compliment to 5 strangers
-- Video call someone you haven't talked to in years
+━━━ STEP 2: THE MEMORY TEST ━━━
+Before writing anything, ask: "Will this person tell this story in 10 years?"
+If NO → discard and think again.
 
-BAD challenges (NEVER suggest these):
-- Generic self-care (meditate, journal, walk)
-- Illegal or dangerous activities
-- Harassment or making others uncomfortable
-- Vague advice ("be confident")
+━━━ STEP 3: THE SPECIFICITY RULE ━━━
+Every challenge MUST include: exact action + specific context + clear trigger
 
-The challenge should make them think "oh shit, can I really do this?" then "...why not?"
+❌ WEAK: "Talk to a stranger"
+✓ STRONG: "Walk into a random café, pick someone sitting alone, and ask: 'I'm on a YOLO challenge — mind if I sit with you for 15 minutes?' No phones during the conversation."
 
-Generate 3 ideas mentally, pick the most FUN and DOABLE one.
+❌ WEAK: "Send a risky text"  
+✓ STRONG: "Text the person you've been thinking about for 2+ months. Write exactly how you feel in one paragraph. Hit send before you finish reading it."
 
-Return ONLY valid JSON (no markdown, no explanation):
-{"title":"YOUR_UNIQUE_TITLE","description":"YOUR_SPECIFIC_DESCRIPTION","difficulty":NUMBER,"category":"CATEGORY","estimatedTime":"TIME","environment":"ENV","socialLevel":"LEVEL"}
+❌ WEAK: "Go outside"
+✓ STRONG: "Find the tallest accessible spot near you — rooftop, hill, overpass. Stand there alone for 10 minutes. No music, no phone. Just exist."
 
-Rules:
-- title: 2-6 words, catchy, in ${language === 'zh' ? 'Chinese' : language === 'ja' ? 'Japanese' : 'English'}
-- description: 1-2 sentences, specific action with context
-- difficulty: 30-90 (no easy mode)
-- category: SOCIAL/PHYSICAL/MENTAL/CHAOS
-- estimatedTime: "5 mins" to "2 hours"
-- environment: indoor/outdoor/online
-- socialLevel: solo/one-on-one/strangers/group
+━━━ CHALLENGE ARCHETYPES (rotate — don't always pick social) ━━━
+SOCIAL: Public performance, confess feelings, ask the scary question, call the person
+PHYSICAL: Body challenge, go somewhere unfamiliar alone, do the intimidating thing
+MENTAL: Create something in 60 mins and share it, delete something, commit to something publicly
+CHAOS: Let random chance decide, break one of your habits today, do the absurd thing and own it
+CONNECTION: Reach out to someone lost, create a moment with a stranger, send the honest message
 
-BE CREATIVE! SURPRISE ME!`;
+━━━ BANNED (instant disqualify) ━━━
+✗ Meditation, journaling, going for a walk (too soft)
+✗ Vague advice like "be yourself" or "be confident"
+✗ Anything requiring advance planning (must be doable NOW)
+✗ Illegal, dangerous, or making others uncomfortable without consent
+✗ Generic compliments to strangers (overused)
+
+━━━ OUTPUT FORMAT ━━━
+Return ONLY valid JSON, no markdown, no explanation:
+{"title":"CATCHY 2-5 WORD TITLE","description":"Exact action with specifics. Start with strong verb. 1-2 sentences max.","difficulty":NUMBER,"category":"SOCIAL/PHYSICAL/MENTAL/CHAOS","estimatedTime":"X mins","environment":"indoor/outdoor/online","socialLevel":"solo/one-on-one/strangers/group"}
+
+Constraints:
+- title: in ${language === 'zh' ? 'Chinese' : language === 'ja' ? 'Japanese' : 'English'}, punchy and memorable
+- description: specific enough that there's NO ambiguity about what to do
+- difficulty: 40-85 (challenging but doable today)
+- Make it something they'll actually want to try`;
 
     const text = await callGemini(prompt);
     if (!text) throw new Error("Empty response");
